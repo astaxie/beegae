@@ -63,8 +63,7 @@ func init() {
 	BeeApp = NewApp()
 
 	// initialize default configurations
-	os.Chdir(path.Dir(os.Args[0]))
-	AppPath = path.Dir(os.Args[0])
+	AppPath = ""
 
 	StaticDir = make(map[string]string)
 	StaticDir["/static"] = "static"
