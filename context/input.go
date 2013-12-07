@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/astaxie/beego/session"
+	"github.com/astaxie/beegae/session"
 )
 
 type BeegoInput struct {

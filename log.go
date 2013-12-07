@@ -1,9 +1,9 @@
-package beego
+package beegae
 
 import (
 	"strings"
 
-	"github.com/astaxie/beego/logs"
+	"github.com/astaxie/beegae/logs"
 )
 
 // Log levels to control the logging output.

@@ -1,11 +1,11 @@
-package beego
+package beegae
 
 import (
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/astaxie/beego/toolbox"
+	"github.com/astaxie/beegae/toolbox"
 )
 
 var BeeAdminApp *AdminApp

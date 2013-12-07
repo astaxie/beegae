@@ -1,4 +1,4 @@
-package beego
+package beegae
 
 import (
 	"fmt"
@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	beecontext "github.com/astaxie/beego/context"
-	"github.com/astaxie/beego/middleware"
-	"github.com/astaxie/beego/toolbox"
+	beecontext "github.com/astaxie/beegae/context"
+	"github.com/astaxie/beegae/middleware"
+	"github.com/astaxie/beegae/toolbox"
 )
 
 const (

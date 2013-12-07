@@ -3,7 +3,7 @@ package context
 import (
 	"net/http"
 
-	"github.com/astaxie/beego/middleware"
+	"github.com/astaxie/beegae/middleware"
 )
 
 type Context struct {

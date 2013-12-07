@@ -1,4 +1,4 @@
-package beego
+package beegae
 
 import (
 	"html/template"

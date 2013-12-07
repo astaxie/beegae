@@ -1,4 +1,4 @@
-package beego
+package beegae
 
 import (
 	"bytes"
@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego/context"
-	"github.com/astaxie/beego/session"
+	"github.com/astaxie/beegae/context"
+	"github.com/astaxie/beegae/session"
 )
 
 type Controller struct {

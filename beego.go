@@ -1,12 +1,12 @@
-package beego
+package beegae
 
 import (
 	"net/http"
 	"path"
 	"strings"
 
-	"github.com/astaxie/beego/middleware"
-	"github.com/astaxie/beego/session"
+	"github.com/astaxie/beegae/middleware"
+	"github.com/astaxie/beegae/session"
 )
 
 const VERSION = "0.9.9"

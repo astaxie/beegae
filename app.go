@@ -1,12 +1,11 @@
-package beego
+package beegae
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"time"
 
-	"github.com/astaxie/beego/context"
+	"github.com/astaxie/beegae/context"
 )
 
 type FilterFunc func(*context.Context)
@@ -33,35 +32,17 @@ func (app *App) Run() {
 
 	var (
 		err error
-		l   net.Listener
 	)
-	if EnableHotUpdate {
-		server := &http.Server{
-			Handler:      app.Handlers,
-			ReadTimeout:  time.Duration(HttpServerTimeOut) * time.Second,
-			WriteTimeout: time.Duration(HttpServerTimeOut) * time.Second,
-		}
-		laddr, err := net.ResolveTCPAddr("tcp", addr)
-		if nil != err {
-			BeeLogger.Critical("ResolveTCPAddr:", err)
-		}
-		l, err = GetInitListner(laddr)
-		theStoppable = newStoppable(l)
-		err = server.Serve(theStoppable)
-		theStoppable.wg.Wait()
-		CloseSelf()
+	s := &http.Server{
+		Addr:         addr,
+		Handler:      app.Handlers,
+		ReadTimeout:  time.Duration(HttpServerTimeOut) * time.Second,
+		WriteTimeout: time.Duration(HttpServerTimeOut) * time.Second,
+	}
+	if HttpTLS {
+		err = s.ListenAndServeTLS(HttpCertFile, HttpKeyFile)
 	} else {
-		s := &http.Server{
-			Addr:         addr,
-			Handler:      app.Handlers,
-			ReadTimeout:  time.Duration(HttpServerTimeOut) * time.Second,
-			WriteTimeout: time.Duration(HttpServerTimeOut) * time.Second,
-		}
-		if HttpTLS {
-			err = s.ListenAndServeTLS(HttpCertFile, HttpKeyFile)
-		} else {
-			err = s.ListenAndServe()
-		}
+		err = s.ListenAndServe()
 	}
 
 	if err != nil {
