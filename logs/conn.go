@@ -7,48 +7,39 @@ import (
 	"net"
 )
 
+// ConnWriter implements LoggerInterface.
+// it writes messages in keep-live tcp connection.
 type ConnWriter struct {
 	lg             *log.Logger
 	innerWriter    io.WriteCloser
-	reconnectOnMsg bool
-	reconnect      bool
-	net            string
-	addr           string
-	level          int
+	ReconnectOnMsg bool   `json:"reconnectOnMsg"`
+	Reconnect      bool   `json:"reconnect"`
+	Net            string `json:"net"`
+	Addr           string `json:"addr"`
+	Level          int    `json:"level"`
 }
 
+// create new ConnWrite returning as LoggerInterface.
 func NewConn() LoggerInterface {
 	conn := new(ConnWriter)
-	conn.level = LevelTrace
+	conn.Level = LevelTrace
 	return conn
 }
 
+// init connection writer with json config.
+// json config only need key "level".
 func (c *ConnWriter) Init(jsonconfig string) error {
-	var m map[string]interface{}
-	err := json.Unmarshal([]byte(jsonconfig), &m)
+	err := json.Unmarshal([]byte(jsonconfig), c)
 	if err != nil {
 		return err
-	}
-	if rom, ok := m["reconnectOnMsg"]; ok {
-		c.reconnectOnMsg = rom.(bool)
-	}
-	if rc, ok := m["reconnect"]; ok {
-		c.reconnect = rc.(bool)
-	}
-	if nt, ok := m["net"]; ok {
-		c.net = nt.(string)
-	}
-	if addr, ok := m["addr"]; ok {
-		c.addr = addr.(string)
-	}
-	if lv, ok := m["level"]; ok {
-		c.level = int(lv.(float64))
 	}
 	return nil
 }
 
+// write message in connection.
+// if connection is down, try to re-connect.
 func (c *ConnWriter) WriteMsg(msg string, level int) error {
-	if level < c.level {
+	if level < c.Level {
 		return nil
 	}
 	if c.neddedConnectOnMsg() {
@@ -58,17 +49,19 @@ func (c *ConnWriter) WriteMsg(msg string, level int) error {
 		}
 	}
 
-	if c.reconnectOnMsg {
+	if c.ReconnectOnMsg {
 		defer c.innerWriter.Close()
 	}
 	c.lg.Println(msg)
 	return nil
 }
 
+// implementing method. empty.
 func (c *ConnWriter) Flush() {
 
 }
 
+// destroy connection writer and close tcp listener.
 func (c *ConnWriter) Destroy() {
 	if c.innerWriter == nil {
 		return
@@ -82,7 +75,7 @@ func (c *ConnWriter) connect() error {
 		c.innerWriter = nil
 	}
 
-	conn, err := net.Dial(c.net, c.addr)
+	conn, err := net.Dial(c.Net, c.Addr)
 	if err != nil {
 		return err
 	}
@@ -97,8 +90,8 @@ func (c *ConnWriter) connect() error {
 }
 
 func (c *ConnWriter) neddedConnectOnMsg() bool {
-	if c.reconnect {
-		c.reconnect = false
+	if c.Reconnect {
+		c.Reconnect = false
 		return true
 	}
 
@@ -106,7 +99,7 @@ func (c *ConnWriter) neddedConnectOnMsg() bool {
 		return true
 	}
 
-	return c.reconnectOnMsg
+	return c.ReconnectOnMsg
 }
 
 func init() {
