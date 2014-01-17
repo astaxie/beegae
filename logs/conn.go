@@ -7,8 +7,6 @@ import (
 	"net"
 )
 
-// ConnWriter implements LoggerInterface.
-// it writes messages in keep-live tcp connection.
 type ConnWriter struct {
 	lg             *log.Logger
 	innerWriter    io.WriteCloser
@@ -19,15 +17,12 @@ type ConnWriter struct {
 	Level          int    `json:"level"`
 }
 
-// create new ConnWrite returning as LoggerInterface.
 func NewConn() LoggerInterface {
 	conn := new(ConnWriter)
 	conn.Level = LevelTrace
 	return conn
 }
 
-// init connection writer with json config.
-// json config only need key "level".
 func (c *ConnWriter) Init(jsonconfig string) error {
 	err := json.Unmarshal([]byte(jsonconfig), c)
 	if err != nil {
@@ -36,8 +31,6 @@ func (c *ConnWriter) Init(jsonconfig string) error {
 	return nil
 }
 
-// write message in connection.
-// if connection is down, try to re-connect.
 func (c *ConnWriter) WriteMsg(msg string, level int) error {
 	if level < c.Level {
 		return nil
@@ -56,12 +49,10 @@ func (c *ConnWriter) WriteMsg(msg string, level int) error {
 	return nil
 }
 
-// implementing method. empty.
 func (c *ConnWriter) Flush() {
 
 }
 
-// destroy connection writer and close tcp listener.
 func (c *ConnWriter) Destroy() {
 	if c.innerWriter == nil {
 		return

@@ -544,9 +544,8 @@ var mimemaps map[string]string = map[string]string{
 	".mustache":    "text/html",
 }
 
-func initMime() error {
+func initMime() {
 	for k, v := range mimemaps {
 		mime.AddExtensionType(k, v)
 	}
-	return nil
 }

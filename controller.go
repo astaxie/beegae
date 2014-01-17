@@ -20,10 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"appengine"
-
+	"github.com/astaxie/beegae/context"
 	"github.com/astaxie/beegae/session"
-	"github.com/astaxie/beego/context"
 )
 
 var (
@@ -47,7 +45,6 @@ type Controller struct {
 	CruSession     session.SessionStore
 	XSRFExpire     int
 	AppController  interface{}
-	AppEngineCtx   appengine.Context
 }
 
 // ControllerInterface is an interface to uniform all controller handler.
@@ -143,7 +140,7 @@ func (c *Controller) RenderString() (string, error) {
 	return string(b), e
 }
 
-// RenderBytes returns the bytes of rendered template string. Do not send out response.
+// RenderBytes returns the bytes of renderd tempate string. Do not send out response.
 func (c *Controller) RenderBytes() ([]byte, error) {
 	//if the controller has set layout, then first get the tplname's content set the content to the layout
 	if c.Layout != "" {
@@ -394,7 +391,6 @@ func (c *Controller) DelSession(name interface{}) {
 // SessionRegenerateID regenerates session id for this session.
 // the session data have no changes.
 func (c *Controller) SessionRegenerateID() {
-	c.CruSession.SessionRelease(c.Ctx.ResponseWriter)
 	c.CruSession = GlobalSessions.SessionRegenerateId(c.Ctx.ResponseWriter, c.Ctx.Request)
 	c.Ctx.Input.CruSession = c.CruSession
 }

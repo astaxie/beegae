@@ -3,7 +3,6 @@
 package session
 
 import (
-	"net/http"
 	"sync"
 	"time"
 
@@ -111,7 +110,7 @@ func (st *AppEngineSessionStore) updatestore() {
 
 // SessionRelease will update the data of a session and reset its
 // expiration time
-func (st *AppEngineSessionStore) SessionRelease(w http.ResponseWriter) {
+func (st *AppEngineSessionStore) SessionRelease() {
 	//Always expected to be called to save session data
 	st.bss_entity.SessionStart = time.Now()
 	st.updatestore()

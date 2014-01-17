@@ -28,12 +28,6 @@ func (mr *FilterRouter) ValidRouter(router string) (bool, map[string]string) {
 	if router == mr.pattern {
 		return true, nil
 	}
-	//pattern /admin  router /admin/  match
-	//pattern /admin/ router /admin don't match, because url will 301 in router
-	if n := len(router); n > 1 && router[n-1] == '/' && router[:n-2] == mr.pattern {
-		return true, nil
-	}
-
 	if mr.hasregex {
 		if !mr.regex.MatchString(router) {
 			return false, nil
@@ -52,7 +46,7 @@ func (mr *FilterRouter) ValidRouter(router string) (bool, map[string]string) {
 	return false, nil
 }
 
-func buildFilter(pattern string, filter FilterFunc) (*FilterRouter, error) {
+func buildFilter(pattern string, filter FilterFunc) *FilterRouter {
 	mr := new(FilterRouter)
 	mr.params = make(map[int]string)
 	mr.filterFunc = filter
@@ -60,7 +54,7 @@ func buildFilter(pattern string, filter FilterFunc) (*FilterRouter, error) {
 	j := 0
 	for i, part := range parts {
 		if strings.HasPrefix(part, ":") {
-			expr := "(.*)"
+			expr := "(.+)"
 			//a user may choose to override the default expression
 			// similar to expressjs: ‘/user/:id([0-9]+)’
 			if index := strings.Index(part, "("); index != -1 {
@@ -83,7 +77,7 @@ func buildFilter(pattern string, filter FilterFunc) (*FilterRouter, error) {
 			j++
 		}
 		if strings.HasPrefix(part, "*") {
-			expr := "(.*)"
+			expr := "(.+)"
 			if part == "*.*" {
 				mr.params[j] = ":path"
 				parts[i] = "([^.]+).([^.]+)"
@@ -143,11 +137,12 @@ func buildFilter(pattern string, filter FilterFunc) (*FilterRouter, error) {
 		pattern = strings.Join(parts, "/")
 		regex, regexErr := regexp.Compile(pattern)
 		if regexErr != nil {
-			return nil, regexErr
+			//TODO add error handling here to avoid panic
+			panic(regexErr)
 		}
 		mr.regex = regex
 		mr.hasregex = true
 	}
 	mr.pattern = pattern
-	return mr, nil
+	return mr
 }
