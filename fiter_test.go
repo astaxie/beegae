@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/astaxie/beego/context"
+	"github.com/astaxie/beegae/context"
 )
 
 var FilterUser = func(ctx *context.Context) {

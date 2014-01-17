@@ -22,8 +22,8 @@ import (
 
 	"appengine"
 
+	"github.com/astaxie/beegae/context"
 	"github.com/astaxie/beegae/session"
-	"github.com/astaxie/beego/context"
 )
 
 var (
