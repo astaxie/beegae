@@ -1,10 +1,7 @@
 package beegae
 
 import (
-	"bufio"
-	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	beecontext "github.com/astaxie/beego/context"
+	beecontext "github.com/astaxie/beegae/context"
 	"github.com/astaxie/beego/middleware"
 	"github.com/astaxie/beego/toolbox"
 	"github.com/astaxie/beego/utils"
@@ -33,14 +30,6 @@ const (
 var (
 	// supported http methods.
 	HTTPMETHOD = []string{"get", "post", "put", "delete", "patch", "options", "head"}
-	// these beego.Controller's methods shouldn't reflect to AutoRouter
-	exceptMethod = []string{"Init", "Prepare", "Finish", "Render", "RenderString",
-		"RenderBytes", "Redirect", "Abort", "StopRun", "UrlFor", "ServeJson", "ServeJsonp",
-		"ServeXml", "Input", "ParseForm", "GetString", "GetStrings", "GetInt", "GetBool",
-		"GetFloat", "GetFile", "SaveToFile", "StartSession", "SetSession", "GetSession",
-		"DelSession", "SessionRegenerateID", "DestroySession", "IsAjax", "GetSecureCookie",
-		"SetSecureCookie", "XsrfToken", "CheckXsrfCookie", "XsrfFormHtml",
-		"GetControllerAndAction"}
 )
 
 type controllerInfo struct {
@@ -88,7 +77,7 @@ func (p *ControllerRegistor) Add(pattern string, c ControllerInterface, mappingM
 	params := make(map[int]string)
 	for i, part := range parts {
 		if strings.HasPrefix(part, ":") {
-			expr := "(.*)"
+			expr := "(.+)"
 			//a user may choose to override the defult expression
 			// similar to expressjs: ‘/user/:id([0-9]+)’
 			if index := strings.Index(part, "("); index != -1 {
@@ -111,7 +100,7 @@ func (p *ControllerRegistor) Add(pattern string, c ControllerInterface, mappingM
 			j++
 		}
 		if strings.HasPrefix(part, "*") {
-			expr := "(.*)"
+			expr := "(.+)"
 			if part == "*.*" {
 				params[j] = ":path"
 				parts[i] = "([^.]+).([^.]+)"
@@ -229,8 +218,8 @@ func (p *ControllerRegistor) Add(pattern string, c ControllerInterface, mappingM
 // Add auto router to ControllerRegistor.
 // example beego.AddAuto(&MainContorlller{}),
 // MainController has method List and Page.
-// visit the url /main/list to execute List function
-// /main/page to execute Page function.
+// visit the url /main/list to exec List function
+// /main/page to exec Page function.
 func (p *ControllerRegistor) AddAuto(c ControllerInterface) {
 	p.enableAuto = true
 	reflectVal := reflect.ValueOf(c)
@@ -243,42 +232,14 @@ func (p *ControllerRegistor) AddAuto(c ControllerInterface) {
 		p.autoRouter[firstParam] = make(map[string]reflect.Type)
 	}
 	for i := 0; i < rt.NumMethod(); i++ {
-		if !utils.InSlice(rt.Method(i).Name, exceptMethod) {
-			p.autoRouter[firstParam][rt.Method(i).Name] = ct
-		}
-	}
-}
-
-// Add auto router to ControllerRegistor with prefix.
-// example beego.AddAutoPrefix("/admin",&MainContorlller{}),
-// MainController has method List and Page.
-// visit the url /admin/main/list to execute List function
-// /admin/main/page to execute Page function.
-func (p *ControllerRegistor) AddAutoPrefix(prefix string, c ControllerInterface) {
-	p.enableAuto = true
-	reflectVal := reflect.ValueOf(c)
-	rt := reflectVal.Type()
-	ct := reflect.Indirect(reflectVal).Type()
-	firstParam := strings.Trim(prefix, "/") + "/" + strings.ToLower(strings.TrimSuffix(ct.Name(), "Controller"))
-	if _, ok := p.autoRouter[firstParam]; ok {
-		return
-	} else {
-		p.autoRouter[firstParam] = make(map[string]reflect.Type)
-	}
-	for i := 0; i < rt.NumMethod(); i++ {
-		if !utils.InSlice(rt.Method(i).Name, exceptMethod) {
-			p.autoRouter[firstParam][rt.Method(i).Name] = ct
-		}
+		p.autoRouter[firstParam][rt.Method(i).Name] = ct
 	}
 }
 
 // [Deprecated] use InsertFilter.
 // Add FilterFunc with pattern for action.
-func (p *ControllerRegistor) AddFilter(pattern, action string, filter FilterFunc) error {
-	mr, err := buildFilter(pattern, filter)
-	if err != nil {
-		return err
-	}
+func (p *ControllerRegistor) AddFilter(pattern, action string, filter FilterFunc) {
+	mr := buildFilter(pattern, filter)
 	switch action {
 	case "BeforeRouter":
 		p.filters[BeforeRouter] = append(p.filters[BeforeRouter], mr)
@@ -292,18 +253,13 @@ func (p *ControllerRegistor) AddFilter(pattern, action string, filter FilterFunc
 		p.filters[FinishRouter] = append(p.filters[FinishRouter], mr)
 	}
 	p.enableFilter = true
-	return nil
 }
 
 // Add a FilterFunc with pattern rule and action constant.
-func (p *ControllerRegistor) InsertFilter(pattern string, pos int, filter FilterFunc) error {
-	mr, err := buildFilter(pattern, filter)
-	if err != nil {
-		return err
-	}
+func (p *ControllerRegistor) InsertFilter(pattern string, pos int, filter FilterFunc) {
+	mr := buildFilter(pattern, filter)
 	p.filters[pos] = append(p.filters[pos], mr)
 	p.enableFilter = true
-	return nil
 }
 
 // UrlFor does another controller handler in this request function.
@@ -529,9 +485,7 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 	// session init
 	if SessionOn {
 		context.Input.CruSession = GlobalSessions.SessionStart(w, r)
-		defer func() {
-			context.Input.CruSession.SessionRelease(w)
-		}()
+		defer context.Input.CruSession.SessionRelease()
 	}
 
 	if !utils.InSlice(strings.ToLower(r.Method), HTTPMETHOD) {
@@ -621,11 +575,12 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 		}
 		// pattern /admin   url /admin 200  /admin/ 200
 		// pattern /admin/  url /admin 301  /admin/ 200
-		if requestPath[n-1] != '/' && requestPath+"/" == route.pattern {
+		if requestPath[n-1] != '/' && len(route.pattern) == n+1 &&
+			route.pattern[n] == '/' && route.pattern[:n] == requestPath {
 			http.Redirect(w, r, requestPath+"/", 301)
 			goto Admin
 		}
-		if requestPath[n-1] == '/' && route.pattern+"/" == requestPath {
+		if requestPath[n-1] == '/' && n >= 2 && requestPath[:n-2] == route.pattern {
 			runMethod = p.getRunMethod(r.Method, context, route)
 			if runMethod != "" {
 				runrouter = route.controllerType
@@ -901,14 +856,4 @@ func (w *responseWriter) WriteHeader(code int) {
 	w.status = code
 	w.started = true
 	w.writer.WriteHeader(code)
-}
-
-// hijacker for http
-func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	hj, ok := w.writer.(http.Hijacker)
-	if !ok {
-		println("supported?")
-		return nil, nil, errors.New("webserver doesn't support hijacking")
-	}
-	return hj.Hijack()
 }

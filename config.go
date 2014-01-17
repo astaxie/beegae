@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -39,7 +40,6 @@ var (
 	SessionHashFunc        string           // session hash generation func.
 	SessionHashKey         string           // session hash salt string.
 	SessionCookieLifeTime  int              // the life time of session id in cookie.
-	SessionAutoSetCookie   bool             // auto setcookie
 	UseFcgi                bool
 	MaxMemory              int64
 	EnableGzip             bool // flag of enable gzip
@@ -85,7 +85,7 @@ func init() {
 
 	RecoverPanic = true
 
-	ViewsPath = filepath.Join(AppPath, "views")
+	ViewsPath = "views"
 
 	SessionOn = false
 	SessionProvider = "memory"
@@ -95,7 +95,6 @@ func init() {
 	SessionHashFunc = "sha1"
 	SessionHashKey = "beegoserversessionkey"
 	SessionCookieLifeTime = 0 //set cookie default is the brower life
-	SessionAutoSetCookie = true
 
 	UseFcgi = false
 
@@ -121,6 +120,8 @@ func init() {
 	AdminHttpAddr = "127.0.0.1"
 	AdminHttpPort = 8088
 
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
 	// init BeeLogger
 	BeeLogger = logs.NewLogger(10000)
 	BeeLogger.SetLogger("console", "")
@@ -137,7 +138,6 @@ func init() {
 func ParseConfig() (err error) {
 	AppConfig, err = config.NewConfig("ini", AppConfigPath)
 	if err != nil {
-		AppConfig = config.NewFakeConfig()
 		return err
 	} else {
 		HttpAddr = AppConfig.String("HttpAddr")
