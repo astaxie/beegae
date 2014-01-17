@@ -77,6 +77,7 @@ func (c *Controller) Init(ctx *context.Context, controllerName, actionName strin
 	c.Ctx = ctx
 	c.TplExt = "tpl"
 	c.AppController = app
+	c.AppEngineCtx = appengine.NewContext(ctx.Request)
 }
 
 // Prepare runs after Init before request function execution.
