@@ -12,8 +12,8 @@ The aim of this project is to keep as much of beego unchanged as possible in bee
 
 ## Features
 
-* Datastore + Memcached backed session store! [read more here](http://beego.me/docs/mvc/controller/session.md) to learn how to use it.
-* `AppEngineCtx` is part of the default Controller.
+* Datastore + Memcached backed session store! [read more here](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) to learn how to use it.
+* `AppEngineCtx` is part of the default Controller. View the included sessions package [documentation](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) for an example of using it!
 
 
 ## beego Documentation
