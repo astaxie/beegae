@@ -12,11 +12,11 @@ The aim of this project is to keep as much of beego unchanged as possible in bee
 
 ## Features
 
-* Datastore + Memcached backed session store! Add use `appengine` as your `SessionProvider`. It is used exactly as the normal session backends found in beego [read more](http://beego.me/docs/mvc/controller/session.md)
-*
+* Datastore + Memcached backed session store! [read more here](http://beego.me/docs/mvc/controller/session.md) to learn how to use it.
+* `AppEngineCtx` is part of the default Controller.
 
 
-## Documentation
+## beego Documentation
 
 [English](http://beego.me/docs/intro/)
 
