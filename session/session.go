@@ -17,6 +17,7 @@ import (
 	"appengine"
 )
 
+// SessionStore contains all data for one session process with specific id.
 type SessionStore interface {
 	Set(key, value interface{}) error     //set session value
 	Get(key interface{}) interface{}      //get session value
@@ -26,6 +27,8 @@ type SessionStore interface {
 	Flush() error                         //delete all data
 }
 
+// Provider contains global session methods and saved SessionStores.
+// it can operate a SessionStore by its id.
 type Provider interface {
 	SessionInit(gclifetime int64, config string) error
 	SessionRead(sid string, c appengine.Context) (SessionStore, error)
@@ -64,16 +67,24 @@ type managerConfig struct {
 	ProviderConfig    string `json:"providerConfig"`
 }
 
+// Manager contains Provider and its configuration.
 type Manager struct {
 	provider Provider
 	config   *managerConfig
 }
 
-//options
-//1. is https  default false
-//2. hashfunc  default sha1
-//3. hashkey default beegosessionkey
-//4. maxage default is none
+// Create new Manager with provider name and json config string.
+// provider name:
+// 1. cookie
+// 2. file
+// 3. memory
+// 4. redis
+// 5. mysql
+// json config:
+// 1. is https  default false
+// 2. hashfunc  default sha1
+// 3. hashkey default beegosessionkey
+// 4. maxage default is none
 func NewManager(provideName, config string) (*Manager, error) {
 	provider, ok := provides[provideName]
 	if !ok {
@@ -105,89 +116,8 @@ func NewManager(provideName, config string) (*Manager, error) {
 	}, nil
 }
 
-func (manager *Manager) GetActiveSession() int {
-	return manager.provider.SessionAll()
-}
-
-func (manager *Manager) SetHashFunc(hasfunc, hashkey string) {
-	manager.config.SessionIDHashFunc = hasfunc
-	manager.config.SessionIDHashKey = hashkey
-}
-
-func (manager *Manager) SetSecure(secure bool) {
-	manager.config.Secure = secure
-}
-
-//remote_addr cruunixnano randdata
-func (manager *Manager) sessionId(r *http.Request) (sid string) {
-	bs := make([]byte, 24)
-	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
-		return ""
-	}
-	sig := fmt.Sprintf("%s%d%s", r.RemoteAddr, time.Now().UnixNano(), bs)
-	if manager.config.SessionIDHashFunc == "md5" {
-		h := md5.New()
-		h.Write([]byte(sig))
-		sid = hex.EncodeToString(h.Sum(nil))
-	} else if manager.config.SessionIDHashFunc == "sha1" {
-		h := hmac.New(sha1.New, []byte(manager.config.SessionIDHashKey))
-		fmt.Fprintf(h, "%s", sig)
-		sid = hex.EncodeToString(h.Sum(nil))
-	} else {
-		h := hmac.New(sha1.New, []byte(manager.config.SessionIDHashKey))
-		fmt.Fprintf(h, "%s", sig)
-		sid = hex.EncodeToString(h.Sum(nil))
-	}
-	return
-}
-
-//Destroy sessionid
-func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
-	var c = appengine.NewContext(r)
-	cookie, err := r.Cookie(manager.config.CookieName)
-	if err != nil || cookie.Value == "" {
-		return
-	} else {
-		manager.provider.SessionDestroy(cookie.Value, c)
-		expiration := time.Now()
-		cookie := http.Cookie{Name: manager.config.CookieName,
-			Path:     "/",
-			HttpOnly: true,
-			Expires:  expiration,
-			MaxAge:   -1}
-		http.SetCookie(w, &cookie)
-	}
-}
-
-func (manager *Manager) SessionRegenerateId(w http.ResponseWriter, r *http.Request) (session SessionStore) {
-	var c = appengine.NewContext(r)
-	sid := manager.sessionId(r)
-	cookie, err := r.Cookie(manager.config.CookieName)
-	if err != nil && cookie.Value == "" {
-		//delete old cookie
-		session, _ = manager.provider.SessionRead(sid, c)
-		cookie = &http.Cookie{Name: manager.config.CookieName,
-			Value:    url.QueryEscape(sid),
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   manager.config.Secure,
-		}
-	} else {
-		oldsid, _ := url.QueryUnescape(cookie.Value)
-		session, _ = manager.provider.SessionRegenerate(oldsid, sid, c)
-		cookie.Value = url.QueryEscape(sid)
-		cookie.HttpOnly = true
-		cookie.Path = "/"
-	}
-	if manager.config.Maxage >= 0 {
-		cookie.MaxAge = manager.config.Maxage
-	}
-	http.SetCookie(w, cookie)
-	r.AddCookie(cookie)
-	return
-}
-
-//get Session
+// Start session. generate or read the session id from http request.
+// if session id exists, return SessionStore with this id.
 func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (session SessionStore) {
 	var c = appengine.NewContext(r)
 	cookie, err := r.Cookie(manager.config.CookieName)
@@ -230,11 +160,103 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 	return
 }
 
+// Destroy session by its id in http request cookie.
+func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
+	var c = appengine.NewContext(r)
+	cookie, err := r.Cookie(manager.config.CookieName)
+	if err != nil || cookie.Value == "" {
+		return
+	} else {
+		manager.provider.SessionDestroy(cookie.Value, c)
+		expiration := time.Now()
+		cookie := http.Cookie{Name: manager.config.CookieName,
+			Path:     "/",
+			HttpOnly: true,
+			Expires:  expiration,
+			MaxAge:   -1}
+		http.SetCookie(w, &cookie)
+	}
+}
+
 // What's the point of this?
 func (manager *Manager) GetProvider(sid string) (sessions SessionStore, err error) {
 	return nil, errors.New("GetProvider not implemented for appengine session provider")
 }
 
-func (manager *Manager) GC() {
+// Start session gc process.
+// it can do gc in times after gc lifetime.
+func (manager *Manager) GC(c appengine.Context) {
+	manager.provider.SessionGC(c)
+	// No such thing as a never ending goroutine...
+	// Create a cronjob + custom handler instead
+	// time.AfterFunc(time.Duration(manager.config.Gclifetime)*time.Second, func() { manager.GC() })
+	return
+}
+
+// Regenerate a session id for this SessionStore who's id is saving in http request.
+func (manager *Manager) SessionRegenerateId(w http.ResponseWriter, r *http.Request) (session SessionStore) {
+	var c = appengine.NewContext(r)
+	sid := manager.sessionId(r)
+	cookie, err := r.Cookie(manager.config.CookieName)
+	if err != nil && cookie.Value == "" {
+		//delete old cookie
+		session, _ = manager.provider.SessionRead(sid, c)
+		cookie = &http.Cookie{Name: manager.config.CookieName,
+			Value:    url.QueryEscape(sid),
+			Path:     "/",
+			HttpOnly: true,
+			Secure:   manager.config.Secure,
+		}
+	} else {
+		oldsid, _ := url.QueryUnescape(cookie.Value)
+		session, _ = manager.provider.SessionRegenerate(oldsid, sid, c)
+		cookie.Value = url.QueryEscape(sid)
+		cookie.HttpOnly = true
+		cookie.Path = "/"
+	}
+	if manager.config.Maxage >= 0 {
+		cookie.MaxAge = manager.config.Maxage
+	}
+	http.SetCookie(w, cookie)
+	r.AddCookie(cookie)
+	return
+}
+
+// Get all active sessions count number.
+func (manager *Manager) GetActiveSession() int {
+	return manager.provider.SessionAll()
+}
+
+// Set hash function for generating session id.
+func (manager *Manager) SetHashFunc(hasfunc, hashkey string) {
+	manager.config.SessionIDHashFunc = hasfunc
+	manager.config.SessionIDHashKey = hashkey
+}
+
+// Set cookie with https.
+func (manager *Manager) SetSecure(secure bool) {
+	manager.config.Secure = secure
+}
+
+// generate session id with rand string, unix nano time, remote addr by hash function.
+func (manager *Manager) sessionId(r *http.Request) (sid string) {
+	bs := make([]byte, 24)
+	if _, err := io.ReadFull(rand.Reader, bs); err != nil {
+		return ""
+	}
+	sig := fmt.Sprintf("%s%d%s", r.RemoteAddr, time.Now().UnixNano(), bs)
+	if manager.config.SessionIDHashFunc == "md5" {
+		h := md5.New()
+		h.Write([]byte(sig))
+		sid = hex.EncodeToString(h.Sum(nil))
+	} else if manager.config.SessionIDHashFunc == "sha1" {
+		h := hmac.New(sha1.New, []byte(manager.config.SessionIDHashKey))
+		fmt.Fprintf(h, "%s", sig)
+		sid = hex.EncodeToString(h.Sum(nil))
+	} else {
+		h := hmac.New(sha1.New, []byte(manager.config.SessionIDHashKey))
+		fmt.Fprintf(h, "%s", sig)
+		sid = hex.EncodeToString(h.Sum(nil))
+	}
 	return
 }

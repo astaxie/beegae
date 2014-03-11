@@ -12,7 +12,7 @@ import (
 )
 
 // beego web framework version.
-const VERSION = "1.0.1"
+const VERSION = "1.1.0"
 
 type hookfunc func() error //hook function to run
 var hooks []hookfunc       //hook function slice to store the hookfunc
@@ -209,7 +209,6 @@ func Run() {
 		if err != nil {
 			panic(err)
 		}
-		go GlobalSessions.GC()
 	}
 
 	err := BuildTemplate(ViewsPath)
@@ -221,7 +220,7 @@ func Run() {
 
 	middleware.VERSION = VERSION
 	middleware.AppName = AppName
-	middleware.RegisterErrorHander()
+	middleware.RegisterErrorHandler()
 
 	if EnableAdmin {
 		go BeeAdminApp.Run()

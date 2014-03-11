@@ -1,9 +1,8 @@
 package beegae
 
 import (
+	"github.com/astaxie/beego/context"
 	"net/http"
-
-	"github.com/astaxie/beegae/context"
 )
 
 // FilterFunc defines filter function type.

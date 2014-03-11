@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	beecontext "github.com/astaxie/beegae/context"
+	beecontext "github.com/astaxie/beego/context"
 	"github.com/astaxie/beego/middleware"
 	"github.com/astaxie/beego/toolbox"
 	"github.com/astaxie/beego/utils"
