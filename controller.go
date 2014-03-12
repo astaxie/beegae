@@ -3,7 +3,6 @@ package beegae
 import (
 	"bytes"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base64"
 	"errors"
@@ -20,8 +19,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beegae/context"
+	"appengine"
+
 	"github.com/astaxie/beegae/session"
+	"github.com/astaxie/beego/context"
+	"github.com/astaxie/beego/utils"
 )
 
 var (
@@ -45,6 +47,8 @@ type Controller struct {
 	CruSession     session.SessionStore
 	XSRFExpire     int
 	AppController  interface{}
+	AppEngineCtx   appengine.Context
+	EnableReander  bool
 }
 
 // ControllerInterface is an interface to uniform all controller handler.
@@ -74,6 +78,9 @@ func (c *Controller) Init(ctx *context.Context, controllerName, actionName strin
 	c.Ctx = ctx
 	c.TplExt = "tpl"
 	c.AppController = app
+	c.EnableReander = true
+	c.Data = ctx.Input.Data
+	c.AppEngineCtx = appengine.NewContext(ctx.Request)
 }
 
 // Prepare runs after Init before request function execution.
@@ -123,6 +130,9 @@ func (c *Controller) Options() {
 
 // Render sends the response with rendered template bytes as text/html type.
 func (c *Controller) Render() error {
+	if !c.EnableReander {
+		return nil
+	}
 	rb, err := c.RenderBytes()
 
 	if err != nil {
@@ -140,7 +150,7 @@ func (c *Controller) RenderString() (string, error) {
 	return string(b), e
 }
 
-// RenderBytes returns the bytes of renderd tempate string. Do not send out response.
+// RenderBytes returns the bytes of rendered template string. Do not send out response.
 func (c *Controller) RenderBytes() ([]byte, error) {
 	//if the controller has set layout, then first get the tplname's content set the content to the layout
 	if c.Layout != "" {
@@ -391,12 +401,16 @@ func (c *Controller) DelSession(name interface{}) {
 // SessionRegenerateID regenerates session id for this session.
 // the session data have no changes.
 func (c *Controller) SessionRegenerateID() {
+	if c.CruSession != nil {
+		c.CruSession.SessionRelease(c.Ctx.ResponseWriter)
+	}
 	c.CruSession = GlobalSessions.SessionRegenerateId(c.Ctx.ResponseWriter, c.Ctx.Request)
 	c.Ctx.Input.CruSession = c.CruSession
 }
 
 // DestroySession cleans session data and session cookie.
 func (c *Controller) DestroySession() {
+	c.Ctx.Input.CruSession.Flush()
 	GlobalSessions.SessionDestroy(c.Ctx.ResponseWriter, c.Ctx.Request)
 }
 
@@ -454,7 +468,7 @@ func (c *Controller) XsrfToken() string {
 			} else {
 				expire = int64(XSRFExpire)
 			}
-			token = getRandomString(15)
+			token = string(utils.RandomCreateBytes(15))
 			c.SetSecureCookie(XSRFKEY, "_xsrf", token, expire)
 		}
 		c._xsrf_token = token
@@ -490,15 +504,4 @@ func (c *Controller) XsrfFormHtml() string {
 // GetControllerAndAction gets the executing controller name and action name.
 func (c *Controller) GetControllerAndAction() (controllerName, actionName string) {
 	return c.controllerName, c.actionName
-}
-
-// getRandomString returns random string.
-func getRandomString(n int) string {
-	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-	var bytes = make([]byte, n)
-	rand.Read(bytes)
-	for i, b := range bytes {
-		bytes[i] = alphanum[b%byte(len(alphanum))]
-	}
-	return string(bytes)
 }

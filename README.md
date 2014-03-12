@@ -1,27 +1,22 @@
-## beego
+## beegae
 
-[![Build Status](https://drone.io/github.com/astaxie/beego/status.png)](https://drone.io/github.com/astaxie/beego/latest)
+[beego](http://github.com/astaxie/beego) is a Go Framework inspired by tornado and sinatra.
 
-beego is a Go Framework inspired by tornado and sinatra.
-
-It is a simple & powerful web framework.
+It is a simple & powerful web framework. Go to the project page to learn more about beego!
 
 More info [beego.me](http://beego.me)
 
+**beegae** is a port of beego intended to be used on Google's AppEngine. There are a few subtle differences between how beego and beegae initalizes applications which you can see for yourself here [example](https://github.com/astaxie/beegae/tree/master/example)
+
+The aim of this project is to keep as much of beego unchanged as possible in beegae.
+
 ## Features
 
-* RESTful support
-* MVC architecture
-* Session support (store in memory, file, Redis or MySQL)
-* Cache support (store in memory, Redis or Memcache)
-* Global Config
-* Intelligent routing
-* Thread-safe map
-* Friendly displaying of errors
-* Useful template functions
+* Datastore + Memcached backed session store! [read more here](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) to learn how to use it.
+* `AppEngineCtx` is part of the default Controller. View the included sessions package [documentation](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) for an example of using it!
 
 
-## Documentation
+## beego Documentation
 
 [English](http://beego.me/docs/intro/)
 
@@ -34,10 +29,3 @@ More info [beego.me](http://beego.me)
 
 beego is licensed under the Apache Licence, Version 2.0
 (http://www.apache.org/licenses/LICENSE-2.0.html).
-
-
-## Use case
-
-- Displaying API documentation: [gowalker](https://github.com/Unknwon/gowalker)
-- seocms: [seocms](https://github.com/chinakr/seocms)
-- CMS: [toropress](https://github.com/insionng/toropress)

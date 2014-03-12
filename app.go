@@ -1,9 +1,8 @@
 package beegae
 
 import (
+	"github.com/astaxie/beego/context"
 	"net/http"
-
-	"github.com/astaxie/beegae/context"
 )
 
 // FilterFunc defines filter function type.
@@ -19,11 +18,6 @@ func NewApp() *App {
 	cr := NewControllerRegistor()
 	app := &App{Handlers: cr}
 	return app
-}
-
-// Run beego application.
-func (app *App) Run() {
-	http.Handle("/", app.Handlers)
 }
 
 // Router adds a url-patterned controller handler.
@@ -54,6 +48,14 @@ func (app *App) Router(path string, c ControllerInterface, mappingMethods ...str
 // visit the url /main/list to exec List function or /main/page to exec Page function.
 func (app *App) AutoRouter(c ControllerInterface) *App {
 	app.Handlers.AddAuto(c)
+	return app
+}
+
+// AutoRouterWithPrefix adds beego-defined controller handler with prefix.
+// if beego.AutoPrefix("/admin",&MainContorlller{}) and MainController has methods List and Page,
+// visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.
+func (app *App) AutoRouterWithPrefix(prefix string, c ControllerInterface) *App {
+	app.Handlers.AddAutoPrefix(prefix, c)
 	return app
 }
 
@@ -100,4 +102,9 @@ func (app *App) SetStaticPath(url string, path string) *App {
 func (app *App) DelStaticPath(url string) *App {
 	delete(StaticDir, url)
 	return app
+}
+
+// Run beego application.
+func (app *App) Run() {
+	http.Handle("/", app.Handlers)
 }
