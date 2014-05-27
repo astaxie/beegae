@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package context
 
 import (
@@ -231,10 +237,14 @@ func (output *BeegoOutput) Xml(data interface{}, hasIndent bool) error {
 
 // Download forces response for download file.
 // it prepares the download response header automatically.
-func (output *BeegoOutput) Download(file string) {
+func (output *BeegoOutput) Download(file string, filename ...string) {
 	output.Header("Content-Description", "File Transfer")
 	output.Header("Content-Type", "application/octet-stream")
-	output.Header("Content-Disposition", "attachment; filename="+filepath.Base(file))
+	if len(filename) > 0 && filename[0] != "" {
+		output.Header("Content-Disposition", "attachment; filename="+filename[0])
+	} else {
+		output.Header("Content-Disposition", "attachment; filename="+filepath.Base(file))
+	}
 	output.Header("Content-Transfer-Encoding", "binary")
 	output.Header("Expires", "0")
 	output.Header("Cache-Control", "must-revalidate")

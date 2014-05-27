@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package session
 
 import (
@@ -10,11 +16,12 @@ func Test_gob(t *testing.T) {
 	a := make(map[interface{}]interface{})
 	a["username"] = "astaxie"
 	a[12] = 234
-	b, err := encodeGob(a)
+	a["user"] = User{"asta", "xie"}
+	b, err := EncodeGob(a)
 	if err != nil {
 		t.Error(err)
 	}
-	c, err := decodeGob(b)
+	c, err := DecodeGob(b)
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,6 +34,14 @@ func Test_gob(t *testing.T) {
 	if c[12] != 234 {
 		t.Error("decode int error")
 	}
+	if c["user"].(User).Username != "asta" {
+		t.Error("decode struct error")
+	}
+}
+
+type User struct {
+	Username string
+	NickName string
 }
 
 func TestGenerate(t *testing.T) {

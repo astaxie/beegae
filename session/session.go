@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package session
 
 import (
@@ -7,7 +13,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -59,11 +64,10 @@ type managerConfig struct {
 	EnableSetCookie   bool   `json:"enableSetCookie,omitempty"`
 	Gclifetime        int64  `json:"gclifetime"`
 	Maxlifetime       int64  `json:"maxLifetime"`
-	Maxage            int    `json:"maxage"`
 	Secure            bool   `json:"secure"`
 	SessionIDHashFunc string `json:"sessionIDHashFunc"`
 	SessionIDHashKey  string `json:"sessionIDHashKey"`
-	CookieLifeTime    int64  `json:"cookieLifeTime"`
+	CookieLifeTime    int    `json:"cookieLifeTime"`
 	ProviderConfig    string `json:"providerConfig"`
 }
 
@@ -129,8 +133,8 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 			Path:     "/",
 			HttpOnly: true,
 			Secure:   manager.config.Secure}
-		if manager.config.Maxage >= 0 {
-			cookie.MaxAge = manager.config.Maxage
+		if manager.config.CookieLifeTime >= 0 {
+			cookie.MaxAge = manager.config.CookieLifeTime
 		}
 		if manager.config.EnableSetCookie {
 			http.SetCookie(w, cookie)
@@ -148,8 +152,8 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 				Path:     "/",
 				HttpOnly: true,
 				Secure:   manager.config.Secure}
-			if manager.config.Maxage >= 0 {
-				cookie.MaxAge = manager.config.Maxage
+			if manager.config.CookieLifeTime >= 0 {
+				cookie.MaxAge = manager.config.CookieLifeTime
 			}
 			if manager.config.EnableSetCookie {
 				http.SetCookie(w, cookie)
@@ -178,9 +182,10 @@ func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// What's the point of this?
-func (manager *Manager) GetProvider(sid string) (sessions SessionStore, err error) {
-	return nil, errors.New("GetProvider not implemented for appengine session provider")
+// Get SessionStore by its id.
+func (manager *Manager) GetSessionStore(sid string, c appengine.Context) (sessions SessionStore, err error) {
+	sessions, err = manager.provider.SessionRead(sid, c)
+	return
 }
 
 // Start session gc process.
@@ -214,8 +219,8 @@ func (manager *Manager) SessionRegenerateId(w http.ResponseWriter, r *http.Reque
 		cookie.HttpOnly = true
 		cookie.Path = "/"
 	}
-	if manager.config.Maxage >= 0 {
-		cookie.MaxAge = manager.config.Maxage
+	if manager.config.CookieLifeTime >= 0 {
+		cookie.MaxAge = manager.config.CookieLifeTime
 	}
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)

@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package beegae
 
 //@todo add template funcs
@@ -151,7 +157,7 @@ func getTplDeep(root, file, parent string, t *template.Template) (*template.Temp
 		fileabspath = filepath.Join(root, file)
 	}
 	if e := utils.FileExists(fileabspath); !e {
-		panic("can't find template file" + file)
+		panic("can't find template file:" + file)
 	}
 	data, err := ioutil.ReadFile(fileabspath)
 	if err != nil {
