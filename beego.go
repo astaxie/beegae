@@ -1,7 +1,14 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package beegae
 
 import (
 	"net/http"
+	"os"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -12,7 +19,7 @@ import (
 )
 
 // beego web framework version.
-const VERSION = "1.1.0"
+const VERSION = "1.2.0"
 
 type hookfunc func() error //hook function to run
 var hooks []hookfunc       //hook function slice to store the hookfunc
@@ -28,12 +35,12 @@ type GroupRouters []groupRouter
 
 // Get a new GroupRouters
 func NewGroupRouters() GroupRouters {
-	return make([]groupRouter, 0)
+	return make(GroupRouters, 0)
 }
 
 // Add Router in the GroupRouters
 // it is for plugin or module to register router
-func (gr GroupRouters) AddRouter(pattern string, c ControllerInterface, mappingMethod ...string) {
+func (gr *GroupRouters) AddRouter(pattern string, c ControllerInterface, mappingMethod ...string) {
 	var newRG groupRouter
 	if len(mappingMethod) > 0 {
 		newRG = groupRouter{
@@ -48,16 +55,16 @@ func (gr GroupRouters) AddRouter(pattern string, c ControllerInterface, mappingM
 			"",
 		}
 	}
-	gr = append(gr, newRG)
+	*gr = append(*gr, newRG)
 }
 
-func (gr GroupRouters) AddAuto(c ControllerInterface) {
+func (gr *GroupRouters) AddAuto(c ControllerInterface) {
 	newRG := groupRouter{
 		"",
 		c,
 		"",
 	}
-	gr = append(gr, newRG)
+	*gr = append(*gr, newRG)
 }
 
 // AddGroupRouter with the prefix
@@ -114,6 +121,60 @@ func AutoPrefix(prefix string, c ControllerInterface) *App {
 	return BeeApp
 }
 
+// register router for Get method
+func Get(rootpath string, f FilterFunc) *App {
+	BeeApp.Get(rootpath, f)
+	return BeeApp
+}
+
+// register router for Post method
+func Post(rootpath string, f FilterFunc) *App {
+	BeeApp.Post(rootpath, f)
+	return BeeApp
+}
+
+// register router for Delete method
+func Delete(rootpath string, f FilterFunc) *App {
+	BeeApp.Delete(rootpath, f)
+	return BeeApp
+}
+
+// register router for Put method
+func Put(rootpath string, f FilterFunc) *App {
+	BeeApp.Put(rootpath, f)
+	return BeeApp
+}
+
+// register router for Head method
+func Head(rootpath string, f FilterFunc) *App {
+	BeeApp.Head(rootpath, f)
+	return BeeApp
+}
+
+// register router for Options method
+func Options(rootpath string, f FilterFunc) *App {
+	BeeApp.Options(rootpath, f)
+	return BeeApp
+}
+
+// register router for Patch method
+func Patch(rootpath string, f FilterFunc) *App {
+	BeeApp.Patch(rootpath, f)
+	return BeeApp
+}
+
+// register router for all method
+func Any(rootpath string, f FilterFunc) *App {
+	BeeApp.Any(rootpath, f)
+	return BeeApp
+}
+
+// register router for own Handler
+func Handler(rootpath string, h http.Handler, options ...interface{}) *App {
+	BeeApp.Handler(rootpath, h, options...)
+	return BeeApp
+}
+
 // ErrorHandler registers http.HandlerFunc to each http err code string.
 // usage:
 // 	beego.ErrorHandler("404",NotFound)
@@ -136,6 +197,7 @@ func SetStaticPath(url string, path string) *App {
 	if !strings.HasPrefix(url, "/") {
 		url = "/" + url
 	}
+	url = strings.TrimRight(url, "/")
 	StaticDir[url] = path
 	return BeeApp
 }
@@ -174,10 +236,20 @@ func AddAPPStartHook(hf hookfunc) {
 // Run beego application.
 // it's alias of App.Run.
 func Run() {
+	initBeforeHttpRun()
+
+	if EnableAdmin {
+		go beeAdminApp.Run()
+	}
+
+	BeeApp.Run()
+}
+
+func initBeforeHttpRun() {
 	// if AppConfigPath not In the conf/app.conf reParse config
 	if AppConfigPath != filepath.Join(AppPath, "conf", "app.conf") {
 		err := ParseConfig()
-		if err != nil {
+		if err != nil && AppConfigPath != filepath.Join(workPath, "conf", "app.conf") {
 			// configuration is critical to app, panic here if parse failed
 			panic(err)
 		}
@@ -221,12 +293,18 @@ func Run() {
 	middleware.VERSION = VERSION
 	middleware.AppName = AppName
 	middleware.RegisterErrorHandler()
+}
 
-	if EnableAdmin {
-		go BeeAdminApp.Run()
+func TestBeegoInit(apppath string) {
+	AppPath = apppath
+	AppConfigPath = filepath.Join(AppPath, "conf", "app.conf")
+	err := ParseConfig()
+	if err != nil && !os.IsNotExist(err) {
+		// for init if doesn't have app.conf will not panic
+		Info(err)
 	}
-
-	BeeApp.Run()
+	os.Chdir(AppPath)
+	initBeforeHttpRun()
 }
 
 func init() {

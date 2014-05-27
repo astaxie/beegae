@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package beegae
 
 import (
@@ -180,16 +186,21 @@ func Htmlunquote(src string) string {
 
 // UrlFor returns url string with another registered controller handler with params.
 //	usage:
+//
 //	UrlFor(".index")
 //	print UrlFor("index")
+//  router /login
 //	print UrlFor("login")
 //	print UrlFor("login", "next","/"")
-//	print UrlFor("profile", "username","John Doe")
+//  router /profile/:username
+//	print UrlFor("profile", ":username","John Doe")
 //	result:
 //	/
 //	/login
 //	/login?next=/
 //	/user/John%20Doe
+//
+//  more detail http://beego.me/docs/mvc/controller/urlbuilding.md
 func UrlFor(endpoint string, values ...string) string {
 	return BeeApp.UrlFor(endpoint, values...)
 }

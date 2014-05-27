@@ -1,3 +1,9 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package beegae
 
 import (
@@ -56,6 +62,60 @@ func (app *App) AutoRouter(c ControllerInterface) *App {
 // visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.
 func (app *App) AutoRouterWithPrefix(prefix string, c ControllerInterface) *App {
 	app.Handlers.AddAutoPrefix(prefix, c)
+	return app
+}
+
+// add router for Get method
+func (app *App) Get(rootpath string, f FilterFunc) *App {
+	app.Handlers.Get(rootpath, f)
+	return app
+}
+
+// add router for Post method
+func (app *App) Post(rootpath string, f FilterFunc) *App {
+	app.Handlers.Post(rootpath, f)
+	return app
+}
+
+// add router for Put method
+func (app *App) Put(rootpath string, f FilterFunc) *App {
+	app.Handlers.Put(rootpath, f)
+	return app
+}
+
+// add router for Delete method
+func (app *App) Delete(rootpath string, f FilterFunc) *App {
+	app.Handlers.Delete(rootpath, f)
+	return app
+}
+
+// add router for Options method
+func (app *App) Options(rootpath string, f FilterFunc) *App {
+	app.Handlers.Options(rootpath, f)
+	return app
+}
+
+// add router for Head method
+func (app *App) Head(rootpath string, f FilterFunc) *App {
+	app.Handlers.Head(rootpath, f)
+	return app
+}
+
+// add router for Patch method
+func (app *App) Patch(rootpath string, f FilterFunc) *App {
+	app.Handlers.Patch(rootpath, f)
+	return app
+}
+
+// add router for Patch method
+func (app *App) Any(rootpath string, f FilterFunc) *App {
+	app.Handlers.Any(rootpath, f)
+	return app
+}
+
+// add router for http.Handler
+func (app *App) Handler(rootpath string, h http.Handler, options ...interface{}) *App {
+	app.Handlers.Handler(rootpath, h, options...)
 	return app
 }
 

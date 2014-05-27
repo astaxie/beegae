@@ -1,9 +1,17 @@
+// Beego (http://beego.me/)
+// @description beego is an open-source, high-performance web framework for the Go programming language.
+// @link        http://github.com/astaxie/beego for the canonical source repository
+// @license     http://github.com/astaxie/beego/blob/master/LICENSE
+// @authors     astaxie
+
 package beegae
 
 import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/astaxie/beegae/context"
 )
 
 type TestController struct {
@@ -13,6 +21,10 @@ type TestController struct {
 func (this *TestController) Get() {
 	this.Data["Username"] = "astaxie"
 	this.Ctx.Output.Body([]byte("ok"))
+}
+
+func (this *TestController) Post() {
+	this.Ctx.Output.Body([]byte(this.Ctx.Input.Query(":name")))
 }
 
 func (this *TestController) List() {
@@ -29,6 +41,15 @@ func (this *TestController) Myext() {
 
 func (this *TestController) GetUrl() {
 	this.Ctx.Output.Body([]byte(this.UrlFor(".Myext")))
+}
+
+func (t *TestController) GetParams() {
+	t.Ctx.WriteString(t.Ctx.Input.Query(":last") + "+" +
+		t.Ctx.Input.Query(":first") + "+" + t.Ctx.Input.Query("learn"))
+}
+
+func (t *TestController) GetManyRouter() {
+	t.Ctx.WriteString(t.Ctx.Input.Query(":id") + t.Ctx.Input.Query(":page"))
 }
 
 type ResStatus struct {
@@ -81,6 +102,18 @@ func TestUserFunc(t *testing.T) {
 	}
 }
 
+func TestPostFunc(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/astaxie", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegistor()
+	handler.Add("/:name", &TestController{})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "astaxie" {
+		t.Errorf("post func should astaxie")
+	}
+}
+
 func TestAutoFunc(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/test/list", nil)
 	w := httptest.NewRecorder()
@@ -123,21 +156,11 @@ func TestRouteOk(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegistor()
-	handler.Add("/person/:last/:first", &TestController{})
+	handler.Add("/person/:last/:first", &TestController{}, "get:GetParams")
 	handler.ServeHTTP(w, r)
-
-	lastNameParam := r.URL.Query().Get(":last")
-	firstNameParam := r.URL.Query().Get(":first")
-	learnParam := r.URL.Query().Get("learn")
-
-	if lastNameParam != "anderson" {
-		t.Errorf("url param set to [%s]; want [%s]", lastNameParam, "anderson")
-	}
-	if firstNameParam != "thomas" {
-		t.Errorf("url param set to [%s]; want [%s]", firstNameParam, "thomas")
-	}
-	if learnParam != "kungfu" {
-		t.Errorf("url param set to [%s]; want [%s]", learnParam, "kungfu")
+	body := w.Body.String()
+	if body != "anderson+thomas+kungfu" {
+		t.Errorf("url param set to [%s];", body)
 	}
 }
 
@@ -147,17 +170,13 @@ func TestManyRoute(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegistor()
-	handler.Add("/beego:id([0-9]+)-:page([0-9]+).html", &TestController{})
+	handler.Add("/beego:id([0-9]+)-:page([0-9]+).html", &TestController{}, "get:GetManyRouter")
 	handler.ServeHTTP(w, r)
 
-	id := r.URL.Query().Get(":id")
-	page := r.URL.Query().Get(":page")
+	body := w.Body.String()
 
-	if id != "32" {
-		t.Errorf("url param set to [%s]; want [%s]", id, "32")
-	}
-	if page != "12" {
-		t.Errorf("url param set to [%s]; want [%s]", page, "12")
+	if body != "3212" {
+		t.Errorf("url param set to [%s];", body)
 	}
 }
 
@@ -208,5 +227,49 @@ func TestAutoPrefix(t *testing.T) {
 	handler.ServeHTTP(w, r)
 	if w.Body.String() != "i am list" {
 		t.Errorf("TestAutoPrefix can't run")
+	}
+}
+
+func TestRouterGet(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/user", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegistor()
+	handler.Get("/user", func(ctx *context.Context) {
+		ctx.Output.Body([]byte("Get userlist"))
+	})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "Get userlist" {
+		t.Errorf("TestRouterGet can't run")
+	}
+}
+
+func TestRouterPost(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/user/123", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegistor()
+	handler.Post("/user/:id", func(ctx *context.Context) {
+		ctx.Output.Body([]byte(ctx.Input.Param(":id")))
+	})
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "123" {
+		t.Errorf("TestRouterPost can't run")
+	}
+}
+
+func sayhello(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("sayhello"))
+}
+
+func TestRouterHandler(t *testing.T) {
+	r, _ := http.NewRequest("POST", "/sayhi", nil)
+	w := httptest.NewRecorder()
+
+	handler := NewControllerRegistor()
+	handler.Handler("/sayhi", http.HandlerFunc(sayhello))
+	handler.ServeHTTP(w, r)
+	if w.Body.String() != "sayhello" {
+		t.Errorf("TestRouterHandler can't run")
 	}
 }

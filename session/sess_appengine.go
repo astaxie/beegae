@@ -46,7 +46,6 @@ func (st *AppEngineSessionStore) Get(key interface{}) interface{} {
 	} else {
 		return nil
 	}
-	return nil
 }
 
 func (st *AppEngineSessionStore) Delete(key interface{}) error {
@@ -72,7 +71,7 @@ func (st *AppEngineSessionStore) SessionID() string {
 }
 
 func (st *AppEngineSessionStore) updatestore() {
-	b, err := encodeGob(st.values)
+	b, err := EncodeGob(st.values)
 	if err != nil {
 		st.c.Errorf("error encoding session data: %v", err)
 		return
@@ -168,7 +167,7 @@ func (mp *AppEngineProvider) SessionRead(sid string, c appengine.Context) (Sessi
 	var kv = make(map[interface{}]interface{})
 
 	if len(e.SessionData) != 0 {
-		decoded_gob, err := decodeGob(e.SessionData)
+		decoded_gob, err := DecodeGob(e.SessionData)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +182,7 @@ func (mp *AppEngineProvider) SessionRegenerate(oldsid, sid string, c appengine.C
 	var kv = make(map[interface{}]interface{})
 
 	if len(e.SessionData) != 0 {
-		decoded_gob, err := decodeGob(e.SessionData)
+		decoded_gob, err := DecodeGob(e.SessionData)
 		if err != nil {
 			return nil, err
 		}
