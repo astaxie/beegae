@@ -1,8 +1,8 @@
 package main
 
 import (
+	"controllers"
 	"github.com/astaxie/beegae"
-	"hello/controllers"
 )
 
 func init() {

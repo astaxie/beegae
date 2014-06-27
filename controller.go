@@ -30,14 +30,23 @@ import (
 //commonly used mime-types
 const (
 	applicationJson = "application/json"
-	applicationXml  = "applicatoin/xml"
+	applicationXml  = "application/xml"
 	textXml         = "text/xml"
 )
 
 var (
 	// custom error when user stop request handler manually.
-	USERSTOPRUN = errors.New("User stop run")
+	USERSTOPRUN                                            = errors.New("User stop run")
+	GlobalControllerRouter map[string][]ControllerComments = make(map[string][]ControllerComments) //pkgpath+controller:comments
 )
+
+// store the comment for the controller method
+type ControllerComments struct {
+	Method           string
+	Router           string
+	AllowHTTPMethods []string
+	Params           []map[string]string
+}
 
 // Controller defines some basic http request handler operations, such as
 // http context, template and view, session and xsrf.
@@ -58,6 +67,7 @@ type Controller struct {
 	AppEngineCtx   appengine.Context
 	EnableRender   bool
 	EnableXSRF     bool
+	methodMapping  map[string]func() //method:routertree
 }
 
 // ControllerInterface is an interface to uniform all controller handler.
@@ -75,6 +85,8 @@ type ControllerInterface interface {
 	Render() error
 	XsrfToken() string
 	CheckXsrfCookie() bool
+	HandlerFunc(fn string) bool
+	URLMapping()
 }
 
 // Init generates default values of controller operations.
@@ -90,6 +102,7 @@ func (c *Controller) Init(ctx *context.Context, controllerName, actionName strin
 	c.EnableXSRF = true
 	c.Data = ctx.Input.Data
 	c.AppEngineCtx = appengine.NewContext(ctx.Request)
+	c.methodMapping = make(map[string]func())
 }
 
 // Prepare runs after Init before request function execution.
@@ -135,6 +148,24 @@ func (c *Controller) Patch() {
 // Options adds a request function to handle OPTIONS request.
 func (c *Controller) Options() {
 	http.Error(c.Ctx.ResponseWriter, "Method Not Allowed", 405)
+}
+
+// call function fn
+func (c *Controller) HandlerFunc(fnname string) bool {
+	if v, ok := c.methodMapping[fnname]; ok {
+		v()
+		return true
+	} else {
+		return false
+	}
+}
+
+// URLMapping register the internal Controller router.
+func (c *Controller) URLMapping() {
+}
+
+func (c *Controller) Mapping(method string, fn func()) {
+	c.methodMapping[method] = fn
 }
 
 // Render sends the response with rendered template bytes as text/html type.
@@ -299,7 +330,6 @@ func (c *Controller) ServeXml() {
 }
 
 // ServeFormatted serve Xml OR Json, depending on the value of the Accept header
-
 func (c *Controller) ServeFormatted() {
 	accept := c.Ctx.Input.Header("Accept")
 	switch accept {
@@ -456,7 +486,7 @@ func (c *Controller) XsrfToken() string {
 			} else {
 				expire = int64(XSRFExpire)
 			}
-			token = string(utils.RandomCreateBytes(15))
+			token = string(utils.RandomCreateBytes(32))
 			c.SetSecureCookie(XSRFKEY, "_xsrf", token, expire)
 		}
 		c._xsrf_token = token

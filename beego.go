@@ -19,7 +19,7 @@ import (
 )
 
 // beego web framework version.
-const VERSION = "1.2.0"
+const VERSION = "1.3.1"
 
 type hookfunc func() error //hook function to run
 var hooks []hookfunc       //hook function slice to store the hookfunc
@@ -80,11 +80,11 @@ func (gr *GroupRouters) AddAuto(c ControllerInterface) {
 func AddGroupRouter(prefix string, groups GroupRouters) *App {
 	for _, v := range groups {
 		if v.pattern == "" {
-			BeeApp.AutoRouterWithPrefix(prefix, v.controller)
+			BeeApp.Handlers.AddAutoPrefix(prefix, v.controller)
 		} else if v.mappingMethods != "" {
-			BeeApp.Router(prefix+v.pattern, v.controller, v.mappingMethods)
+			BeeApp.Handlers.Add(prefix+v.pattern, v.controller, v.mappingMethods)
 		} else {
-			BeeApp.Router(prefix+v.pattern, v.controller)
+			BeeApp.Handlers.Add(prefix+v.pattern, v.controller)
 		}
 
 	}
@@ -93,8 +93,54 @@ func AddGroupRouter(prefix string, groups GroupRouters) *App {
 
 // Router adds a patterned controller handler to BeeApp.
 // it's an alias method of App.Router.
+// usage:
+//  simple router
+//  beego.Router("/admin", &admin.UserController{})
+//  beego.Router("/admin/index", &admin.ArticleController{})
+//
+//  regex router
+//
+//  beego.Router("/api/:id([0-9]+)", &controllers.RController{})
+//
+//  custom rules
+//  beego.Router("/api/list",&RestController{},"*:ListFood")
+//  beego.Router("/api/create",&RestController{},"post:CreateFood")
+//  beego.Router("/api/update",&RestController{},"put:UpdateFood")
+//  beego.Router("/api/delete",&RestController{},"delete:DeleteFood")
 func Router(rootpath string, c ControllerInterface, mappingMethods ...string) *App {
-	BeeApp.Router(rootpath, c, mappingMethods...)
+	BeeApp.Handlers.Add(rootpath, c, mappingMethods...)
+	return BeeApp
+}
+
+// Router add list from
+// usage:
+// beego.Include(&BankAccount{}, &OrderController{},&RefundController{},&ReceiptController{})
+// type BankAccount struct{
+//   beego.Controller
+// }
+//
+// register the function
+// func (b *BankAccount)Mapping(){
+//  b.Mapping("ShowAccount" , b.ShowAccount)
+//  b.Mapping("ModifyAccount", b.ModifyAccount)
+//}
+//
+// //@router /account/:id  [get]
+// func (b *BankAccount) ShowAccount(){
+//    //logic
+// }
+//
+//
+// //@router /account/:id  [post]
+// func (b *BankAccount) ModifyAccount(){
+//    //logic
+// }
+//
+// the comments @router url methodlist
+// url support all the function Router's pattern
+// methodlist [get post head put delete options *]
+func Include(cList ...ControllerInterface) *App {
+	BeeApp.Handlers.Include(cList...)
 	return BeeApp
 }
 
@@ -109,69 +155,109 @@ func RESTRouter(rootpath string, c ControllerInterface) *App {
 
 // AutoRouter adds defined controller handler to BeeApp.
 // it's same to App.AutoRouter.
+// if beego.AddAuto(&MainContorlller{}) and MainController has methods List and Page,
+// visit the url /main/list to exec List function or /main/page to exec Page function.
 func AutoRouter(c ControllerInterface) *App {
-	BeeApp.AutoRouter(c)
+	BeeApp.Handlers.AddAuto(c)
 	return BeeApp
 }
 
 // AutoPrefix adds controller handler to BeeApp with prefix.
 // it's same to App.AutoRouterWithPrefix.
+// if beego.AutoPrefix("/admin",&MainContorlller{}) and MainController has methods List and Page,
+// visit the url /admin/main/list to exec List function or /admin/main/page to exec Page function.
 func AutoPrefix(prefix string, c ControllerInterface) *App {
-	BeeApp.AutoRouterWithPrefix(prefix, c)
+	BeeApp.Handlers.AddAutoPrefix(prefix, c)
 	return BeeApp
 }
 
 // register router for Get method
+// usage:
+//    beego.Get("/", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Get(rootpath string, f FilterFunc) *App {
-	BeeApp.Get(rootpath, f)
+	BeeApp.Handlers.Get(rootpath, f)
 	return BeeApp
 }
 
 // register router for Post method
+// usage:
+//    beego.Post("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Post(rootpath string, f FilterFunc) *App {
-	BeeApp.Post(rootpath, f)
+	BeeApp.Handlers.Post(rootpath, f)
 	return BeeApp
 }
 
 // register router for Delete method
+// usage:
+//    beego.Delete("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Delete(rootpath string, f FilterFunc) *App {
-	BeeApp.Delete(rootpath, f)
+	BeeApp.Handlers.Delete(rootpath, f)
 	return BeeApp
 }
 
 // register router for Put method
+// usage:
+//    beego.Put("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Put(rootpath string, f FilterFunc) *App {
-	BeeApp.Put(rootpath, f)
+	BeeApp.Handlers.Put(rootpath, f)
 	return BeeApp
 }
 
 // register router for Head method
+// usage:
+//    beego.Head("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Head(rootpath string, f FilterFunc) *App {
-	BeeApp.Head(rootpath, f)
+	BeeApp.Handlers.Head(rootpath, f)
 	return BeeApp
 }
 
 // register router for Options method
+// usage:
+//    beego.Options("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Options(rootpath string, f FilterFunc) *App {
-	BeeApp.Options(rootpath, f)
+	BeeApp.Handlers.Options(rootpath, f)
 	return BeeApp
 }
 
 // register router for Patch method
+// usage:
+//    beego.Patch("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Patch(rootpath string, f FilterFunc) *App {
-	BeeApp.Patch(rootpath, f)
+	BeeApp.Handlers.Patch(rootpath, f)
 	return BeeApp
 }
 
 // register router for all method
+// usage:
+//    beego.Any("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Any(rootpath string, f FilterFunc) *App {
-	BeeApp.Any(rootpath, f)
+	BeeApp.Handlers.Any(rootpath, f)
 	return BeeApp
 }
 
 // register router for own Handler
+// usage:
+//    beego.Handler("/api", func(ctx *context.Context){
+//          ctx.Output.Body("hello world")
+//    })
 func Handler(rootpath string, h http.Handler, options ...interface{}) *App {
-	BeeApp.Handler(rootpath, h, options...)
+	BeeApp.Handlers.Handler(rootpath, h, options...)
 	return BeeApp
 }
 
@@ -184,15 +270,14 @@ func Errorhandler(err string, h http.HandlerFunc) *App {
 	return BeeApp
 }
 
-// SetViewsPath sets view directory to BeeApp.
-// it's alias of App.SetViewsPath.
+// SetViewsPath sets view directory path in beego application.
 func SetViewsPath(path string) *App {
-	BeeApp.SetViewsPath(path)
+	ViewsPath = path
 	return BeeApp
 }
 
-// SetStaticPath sets static directory and url prefix to BeeApp.
-// it's alias of App.SetStaticPath.
+// SetStaticPath sets static directory path and proper url pattern in beego application.
+// if beego.SetStaticPath("static","public"), visit /static/* to load static file in folder "public".
 func SetStaticPath(url string, path string) *App {
 	if !strings.HasPrefix(url, "/") {
 		url = "/" + url
@@ -203,27 +288,16 @@ func SetStaticPath(url string, path string) *App {
 }
 
 // DelStaticPath removes the static folder setting in this url pattern in beego application.
-// it's alias of App.DelStaticPath.
 func DelStaticPath(url string) *App {
 	delete(StaticDir, url)
-	return BeeApp
-}
-
-// [Deprecated] use InsertFilter.
-// Filter adds a FilterFunc under pattern condition and named action.
-// The actions contains BeforeRouter,AfterStatic,BeforeExec,AfterExec and FinishRouter.
-// it's alias of App.Filter.
-func AddFilter(pattern, action string, filter FilterFunc) *App {
-	BeeApp.Filter(pattern, action, filter)
 	return BeeApp
 }
 
 // InsertFilter adds a FilterFunc with pattern condition and action constant.
 // The pos means action constant including
 // beego.BeforeRouter, beego.AfterStatic, beego.BeforeExec, beego.AfterExec and beego.FinishRouter.
-// it's alias of App.InsertFilter.
 func InsertFilter(pattern string, pos int, filter FilterFunc) *App {
-	BeeApp.InsertFilter(pattern, pos, filter)
+	BeeApp.Handlers.InsertFilter(pattern, pos, filter)
 	return BeeApp
 }
 
@@ -234,8 +308,19 @@ func AddAPPStartHook(hf hookfunc) {
 }
 
 // Run beego application.
-// it's alias of App.Run.
-func Run() {
+// beego.Run() default run on HttpPort
+// beego.Run(":8089")
+// beego.Run("127.0.0.1:8089")
+func Run(params ...string) {
+	if len(params) > 0 && params[0] != "" {
+		strs := strings.Split(params[0], ":")
+		if len(strs) > 0 && strs[0] != "" {
+			HttpAddr = strs[0]
+		}
+		if len(strs) > 1 && strs[1] != "" {
+			HttpPort, _ = strconv.Atoi(strs[1])
+		}
+	}
 	initBeforeHttpRun()
 
 	if EnableAdmin {
@@ -270,7 +355,7 @@ func initBeforeHttpRun() {
 			sessionConfig = `{"cookieName":"` + SessionName + `",` +
 				`"gclifetime":` + strconv.FormatInt(SessionGCMaxLifetime, 10) + `,` +
 				`"providerConfig":"` + SessionSavePath + `",` +
-				`"secure":` + strconv.FormatBool(HttpTLS) + `,` +
+				`"secure":` + strconv.FormatBool(EnableHttpTLS) + `,` +
 				`"sessionIDHashFunc":"` + SessionHashFunc + `",` +
 				`"sessionIDHashKey":"` + SessionHashKey + `",` +
 				`"enableSetCookie":` + strconv.FormatBool(SessionAutoSetCookie) + `,` +
@@ -293,10 +378,17 @@ func initBeforeHttpRun() {
 	middleware.VERSION = VERSION
 	middleware.AppName = AppName
 	middleware.RegisterErrorHandler()
+
+	if EnableDocs {
+		Get("/docs", serverDocs)
+		Get("/docs/*", serverDocs)
+	}
 }
 
+// this function is for test package init
 func TestBeegoInit(apppath string) {
 	AppPath = apppath
+	RunMode = "test"
 	AppConfigPath = filepath.Join(AppPath, "conf", "app.conf")
 	err := ParseConfig()
 	if err != nil && !os.IsNotExist(err) {

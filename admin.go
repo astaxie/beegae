@@ -88,7 +88,7 @@ func listConf(rw http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(rw, "StaticExtensionsToGzip:", StaticExtensionsToGzip)
 			fmt.Fprintln(rw, "HttpAddr:", HttpAddr)
 			fmt.Fprintln(rw, "HttpPort:", HttpPort)
-			fmt.Fprintln(rw, "HttpTLS:", HttpTLS)
+			fmt.Fprintln(rw, "HttpTLS:", EnableHttpTLS)
 			fmt.Fprintln(rw, "HttpCertFile:", HttpCertFile)
 			fmt.Fprintln(rw, "HttpKeyFile:", HttpKeyFile)
 			fmt.Fprintln(rw, "RecoverPanic:", RecoverPanic)
@@ -107,7 +107,6 @@ func listConf(rw http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(rw, "MaxMemory:", MaxMemory)
 			fmt.Fprintln(rw, "EnableGzip:", EnableGzip)
 			fmt.Fprintln(rw, "DirectoryIndex:", DirectoryIndex)
-			fmt.Fprintln(rw, "EnableHotUpdate:", EnableHotUpdate)
 			fmt.Fprintln(rw, "HttpServerTimeOut:", HttpServerTimeOut)
 			fmt.Fprintln(rw, "ErrorsShow:", ErrorsShow)
 			fmt.Fprintln(rw, "XSRFKEY:", XSRFKEY)
@@ -122,39 +121,18 @@ func listConf(rw http.ResponseWriter, r *http.Request) {
 			fmt.Fprintln(rw, "AdminHttpPort:", AdminHttpPort)
 		case "router":
 			fmt.Fprintln(rw, "Print all router infomation:")
-			for _, router := range BeeApp.Handlers.fixrouters {
-				if router.hasMethod {
-					fmt.Fprintln(rw, router.pattern, "----", router.methods, "----", router.controllerType.Name())
-				} else {
-					fmt.Fprintln(rw, router.pattern, "----", router.controllerType.Name())
-				}
+			for method, t := range BeeApp.Handlers.routers {
+				fmt.Fprintln(rw)
+				fmt.Fprintln(rw)
+				fmt.Fprintln(rw, "		Method:", method)
+				printTree(rw, t)
 			}
-			for _, router := range BeeApp.Handlers.routers {
-				if router.hasMethod {
-					fmt.Fprintln(rw, router.pattern, "----", router.methods, "----", router.controllerType.Name())
-				} else {
-					fmt.Fprintln(rw, router.pattern, "----", router.controllerType.Name())
-				}
-			}
-			if BeeApp.Handlers.enableAuto {
-				for controllerName, methodObj := range BeeApp.Handlers.autoRouter {
-					fmt.Fprintln(rw, controllerName, "----")
-					for methodName, obj := range methodObj {
-						fmt.Fprintln(rw, "        ", methodName, "-----", obj.Name())
-					}
-				}
-			}
+			// @todo print routers
 		case "filter":
 			fmt.Fprintln(rw, "Print all filter infomation:")
 			if BeeApp.Handlers.enableFilter {
 				fmt.Fprintln(rw, "BeforeRouter:")
 				if bf, ok := BeeApp.Handlers.filters[BeforeRouter]; ok {
-					for _, f := range bf {
-						fmt.Fprintln(rw, f.pattern, utils.GetFuncName(f.filterFunc))
-					}
-				}
-				fmt.Fprintln(rw, "AfterStatic:")
-				if bf, ok := BeeApp.Handlers.filters[AfterStatic]; ok {
 					for _, f := range bf {
 						fmt.Fprintln(rw, f.pattern, utils.GetFuncName(f.filterFunc))
 					}
@@ -191,6 +169,26 @@ func listConf(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func printTree(rw http.ResponseWriter, t *Tree) {
+	for _, tr := range t.fixrouters {
+		printTree(rw, tr)
+	}
+	if t.wildcard != nil {
+		printTree(rw, t.wildcard)
+	}
+	for _, l := range t.leaves {
+		if v, ok := l.runObject.(*controllerInfo); ok {
+			if v.routerType == routerTypeBeego {
+				fmt.Fprintln(rw, v.pattern, v.methods, v.controllerType.Name())
+			} else if v.routerType == routerTypeRESTFul {
+				fmt.Fprintln(rw, v.pattern, v.methods)
+			} else if v.routerType == routerTypeHandler {
+				fmt.Fprintln(rw, v.pattern, "handler")
+			}
+		}
+	}
+}
+
 // ProfIndex is a http.Handler for showing profile command.
 // it's in url pattern "/prof" in admin module.
 func profIndex(rw http.ResponseWriter, r *http.Request) {
@@ -219,9 +217,9 @@ func profIndex(rw http.ResponseWriter, r *http.Request) {
 func healthcheck(rw http.ResponseWriter, req *http.Request) {
 	for name, h := range toolbox.AdminCheckList {
 		if err := h.Check(); err != nil {
-			fmt.Fprintf(rw, "%s : ok\n", name)
-		} else {
 			fmt.Fprintf(rw, "%s : %s\n", name, err.Error())
+		} else {
+			fmt.Fprintf(rw, "%s : ok\n", name)
 		}
 	}
 }
