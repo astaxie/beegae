@@ -15,15 +15,14 @@ The aim of this project is to keep as much of beego unchanged as possible in bee
 * Datastore + Memcached backed session store! [read more here](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) to learn how to use it.
 * `AppEngineCtx` is part of the default Controller. View the included sessions package [documentation](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) for an example of using it!
 
-
 ## beego Documentation
 
-[English](http://beego.me/docs/intro/)
+* [English](http://beego.me/docs/intro/)
+* [中文文档](http://beego.me/docs/intro/)
 
-[API](http://gowalker.org/github.com/astaxie/beego)
+## Community
 
-[中文文档](http://beego.me/docs/intro/)
-
+* [http://beego.me/community](http://beego.me/community)
 
 ## LICENSE
 
