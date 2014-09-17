@@ -108,13 +108,8 @@ func (c *Controller) Init(ctx *context.Context, controllerName, actionName strin
 	c.EnableRender = true
 	c.EnableXSRF = true
 	c.Data = ctx.Input.Data
+	c.AppEngineCtx = appengine.NewContext(ctx.Request)
 	c.methodMapping = make(map[string]func())
-
-	if RunMode == "test" {
-		c.AppEngineCtx = TestAppEngineCtx
-	} else {
-		c.AppEngineCtx = appengine.NewContext(ctx.Request)
-	}
 }
 
 // Prepare runs after Init before request function execution.
