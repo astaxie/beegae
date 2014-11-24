@@ -15,6 +15,7 @@
 package beegae
 
 import (
+    "bytes"
 	"bufio"
 	"errors"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+    "io/ioutil"
 
 	beecontext "github.com/astaxie/beegae/context"
 	"github.com/astaxie/beego/middleware"
@@ -597,10 +599,22 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 	}
 
 	if r.Method != "GET" && r.Method != "HEAD" {
-		if CopyRequestBody && !context.Input.IsUpload() {
-			context.Input.CopyBody()
-		}
-		context.Input.ParseFormOrMulitForm(MaxMemory)
+        originalBody := []byte(nil)
+
+        // File upload request no need to copy the body (May huge) as we only use this code on GAE
+        if context.Input.IsUpload() {
+            originalBody = context.Input.CopyBody()
+        } else if CopyRequestBody {
+            context.Input.CopyBody()
+        }
+
+        context.Input.ParseFormOrMulitForm(MaxMemory)
+
+        if originalBody != nil {
+            oBodyBuffer := bytes.NewBuffer(originalBody)
+
+            context.Request.Body = ioutil.NopCloser(oBodyBuffer)
+        }
 	}
 
 	if do_filter(BeforeRouter) {
