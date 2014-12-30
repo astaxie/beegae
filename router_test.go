@@ -17,42 +17,45 @@ package beegae
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/astaxie/beegae/context"
+
+	"appengine/aetest"
 )
 
 type TestController struct {
 	Controller
 }
 
-func (this *TestController) Get() {
-	this.Data["Username"] = "astaxie"
-	this.Ctx.Output.Body([]byte("ok"))
+func (tc *TestController) Get() {
+	tc.Data["Username"] = "astaxie"
+	tc.Ctx.Output.Body([]byte("ok"))
 }
 
-func (this *TestController) Post() {
-	this.Ctx.Output.Body([]byte(this.Ctx.Input.Query(":name")))
+func (tc *TestController) Post() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Query(":name")))
 }
 
-func (this *TestController) Param() {
-	this.Ctx.Output.Body([]byte(this.Ctx.Input.Query(":name")))
+func (tc *TestController) Param() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Query(":name")))
 }
 
-func (this *TestController) List() {
-	this.Ctx.Output.Body([]byte("i am list"))
+func (tc *TestController) List() {
+	tc.Ctx.Output.Body([]byte("i am list"))
 }
 
-func (this *TestController) Params() {
-	this.Ctx.Output.Body([]byte(this.Ctx.Input.Params["0"] + this.Ctx.Input.Params["1"] + this.Ctx.Input.Params["2"]))
+func (tc *TestController) Params() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Params["0"] + tc.Ctx.Input.Params["1"] + tc.Ctx.Input.Params["2"]))
 }
 
-func (this *TestController) Myext() {
-	this.Ctx.Output.Body([]byte(this.Ctx.Input.Param(":ext")))
+func (tc *TestController) Myext() {
+	tc.Ctx.Output.Body([]byte(tc.Ctx.Input.Param(":ext")))
 }
 
-func (this *TestController) GetUrl() {
-	this.Ctx.Output.Body([]byte(this.UrlFor(".Myext")))
+func (tc *TestController) GetUrl() {
+	tc.Ctx.Output.Body([]byte(tc.UrlFor(".Myext")))
 }
 
 func (t *TestController) GetParams() {
@@ -137,7 +140,13 @@ func TestUrlFor2(t *testing.T) {
 }
 
 func TestUserFunc(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/api/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/api/list", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -149,7 +158,13 @@ func TestUserFunc(t *testing.T) {
 }
 
 func TestPostFunc(t *testing.T) {
-	r, _ := http.NewRequest("POST", "/astaxie", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("POST", "/astaxie", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -161,7 +176,13 @@ func TestPostFunc(t *testing.T) {
 }
 
 func TestAutoFunc(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/test/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/test/list", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -173,7 +194,13 @@ func TestAutoFunc(t *testing.T) {
 }
 
 func TestAutoFunc2(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/Test/List", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/Test/List", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -185,7 +212,13 @@ func TestAutoFunc2(t *testing.T) {
 }
 
 func TestAutoFuncParams(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/test/params/2009/11/12", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/test/params/2009/11/12", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -197,7 +230,13 @@ func TestAutoFuncParams(t *testing.T) {
 }
 
 func TestAutoExtFunc(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/test/myext.json", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/test/myext.json", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -210,7 +249,13 @@ func TestAutoExtFunc(t *testing.T) {
 
 func TestRouteOk(t *testing.T) {
 
-	r, _ := http.NewRequest("GET", "/person/anderson/thomas?learn=kungfu", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/person/anderson/thomas?learn=kungfu", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -224,7 +269,13 @@ func TestRouteOk(t *testing.T) {
 
 func TestManyRoute(t *testing.T) {
 
-	r, _ := http.NewRequest("GET", "/beego32-12.html", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/beego32-12.html", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -239,7 +290,13 @@ func TestManyRoute(t *testing.T) {
 }
 
 func TestNotFound(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -253,7 +310,13 @@ func TestNotFound(t *testing.T) {
 // TestStatic tests the ability to serve static
 // content from the filesystem
 func TestStatic(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/static/js/jquery.js", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/static/js/jquery.js", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -265,7 +328,13 @@ func TestStatic(t *testing.T) {
 }
 
 func TestPrepare(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/json/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/json/list", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -277,7 +346,13 @@ func TestPrepare(t *testing.T) {
 }
 
 func TestAutoPrefix(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/admin/test/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/admin/test/list", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -289,7 +364,13 @@ func TestAutoPrefix(t *testing.T) {
 }
 
 func TestRouterGet(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/user", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/user", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -303,7 +384,13 @@ func TestRouterGet(t *testing.T) {
 }
 
 func TestRouterPost(t *testing.T) {
-	r, _ := http.NewRequest("POST", "/user/123", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("POST", "/user/123", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -321,7 +408,13 @@ func sayhello(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestRouterHandler(t *testing.T) {
-	r, _ := http.NewRequest("POST", "/sayhi", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("POST", "/sayhi", nil)
 	w := httptest.NewRecorder()
 
 	handler := NewControllerRegister()
@@ -384,4 +477,197 @@ func testRequest(method, path string) (*httptest.ResponseRecorder, *http.Request
 	recorder := httptest.NewRecorder()
 
 	return recorder, request
+}
+
+// Execution point: BeforeRouter
+// expectation: only BeforeRouter function is executed, notmatch output as router doesn't handle
+func TestFilterBeforeRouter(t *testing.T) {
+	testName := "TestFilterBeforeRouter"
+	url := "/beforeRouter"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, beegoBeforeRouter1)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "BeforeRouter1") == false {
+		t.Errorf(testName + " BeforeRouter did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == true {
+		t.Errorf(testName + " BeforeRouter did not return properly")
+	}
+}
+
+// Execution point: BeforeExec
+// expectation: only BeforeExec function is executed, match as router determines route only
+func TestFilterBeforeExec(t *testing.T) {
+	testName := "TestFilterBeforeExec"
+	url := "/beforeExec"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, beegoFilterNoOutput)
+	mux.InsertFilter(url, BeforeExec, beegoBeforeExec1)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "BeforeExec1") == false {
+		t.Errorf(testName + " BeforeExec did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == true {
+		t.Errorf(testName + " BeforeExec did not return properly")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") == true {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+}
+
+// Execution point: AfterExec
+// expectation: only AfterExec function is executed, match as router handles
+func TestFilterAfterExec(t *testing.T) {
+	testName := "TestFilterAfterExec"
+	url := "/afterExec"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, beegoFilterNoOutput)
+	mux.InsertFilter(url, BeforeExec, beegoFilterNoOutput)
+	mux.InsertFilter(url, AfterExec, beegoAfterExec1)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "AfterExec1") == false {
+		t.Errorf(testName + " AfterExec did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == false {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") == true {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeExec") == true {
+		t.Errorf(testName + " BeforeExec ran in error")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: only FinishRouter function is executed, match as router handles
+func TestFilterFinishRouter(t *testing.T) {
+	testName := "TestFilterFinishRouter"
+	url := "/finishRouter"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, BeforeRouter, beegoFilterNoOutput)
+	mux.InsertFilter(url, BeforeExec, beegoFilterNoOutput)
+	mux.InsertFilter(url, AfterExec, beegoFilterNoOutput)
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "FinishRouter1") == true {
+		t.Errorf(testName + " FinishRouter did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == false {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if strings.Contains(rw.Body.String(), "AfterExec1") == true {
+		t.Errorf(testName + " AfterExec ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeRouter") == true {
+		t.Errorf(testName + " BeforeRouter ran in error")
+	}
+	if strings.Contains(rw.Body.String(), "BeforeExec") == true {
+		t.Errorf(testName + " BeforeExec ran in error")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: only first FinishRouter function is executed, match as router handles
+func TestFilterFinishRouterMultiFirstOnly(t *testing.T) {
+	testName := "TestFilterFinishRouterMultiFirstOnly"
+	url := "/finishRouterMultiFirstOnly"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1)
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter2)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "FinishRouter1") == false {
+		t.Errorf(testName + " FinishRouter1 did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == false {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	// not expected in body
+	if strings.Contains(rw.Body.String(), "FinishRouter2") == true {
+		t.Errorf(testName + " FinishRouter2 did run")
+	}
+}
+
+// Execution point: FinishRouter
+// expectation: both FinishRouter functions execute, match as router handles
+func TestFilterFinishRouterMulti(t *testing.T) {
+	testName := "TestFilterFinishRouterMulti"
+	url := "/finishRouterMulti"
+
+	mux := NewControllerRegister()
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1, false)
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter2)
+
+	mux.Get(url, beegoFilterFunc)
+
+	rw, r := testRequest("GET", url)
+	mux.ServeHTTP(rw, r)
+
+	if strings.Contains(rw.Body.String(), "FinishRouter1") == false {
+		t.Errorf(testName + " FinishRouter1 did not run")
+	}
+	if strings.Contains(rw.Body.String(), "hello") == false {
+		t.Errorf(testName + " handler did not run properly")
+	}
+	if strings.Contains(rw.Body.String(), "FinishRouter2") == false {
+		t.Errorf(testName + " FinishRouter2 did not run properly")
+	}
+}
+
+func beegoFilterNoOutput(ctx *context.Context) {
+	return
+}
+func beegoBeforeRouter1(ctx *context.Context) {
+	ctx.WriteString("|BeforeRouter1")
+}
+func beegoBeforeRouter2(ctx *context.Context) {
+	ctx.WriteString("|BeforeRouter2")
+}
+func beegoBeforeExec1(ctx *context.Context) {
+	ctx.WriteString("|BeforeExec1")
+}
+func beegoBeforeExec2(ctx *context.Context) {
+	ctx.WriteString("|BeforeExec2")
+}
+func beegoAfterExec1(ctx *context.Context) {
+	ctx.WriteString("|AfterExec1")
+}
+func beegoAfterExec2(ctx *context.Context) {
+	ctx.WriteString("|AfterExec2")
+}
+func beegoFinishRouter1(ctx *context.Context) {
+	ctx.WriteString("|FinishRouter1")
+}
+func beegoFinishRouter2(ctx *context.Context) {
+	ctx.WriteString("|FinishRouter2")
 }

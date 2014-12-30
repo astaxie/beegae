@@ -15,12 +15,8 @@
 package beegae
 
 import (
-	"github.com/astaxie/beegae/context"
 	"net/http"
 )
-
-// FilterFunc defines filter function type.
-type FilterFunc func(*context.Context)
 
 // App defines beego application with a new PatternServeMux.
 type App struct {

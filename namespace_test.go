@@ -15,16 +15,23 @@
 package beegae
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"testing"
 
 	"github.com/astaxie/beegae/context"
+
+	"appengine/aetest"
 )
 
 func TestNamespaceGet(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/user", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/user", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -39,7 +46,13 @@ func TestNamespaceGet(t *testing.T) {
 }
 
 func TestNamespacePost(t *testing.T) {
-	r, _ := http.NewRequest("POST", "/v1/user/123", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("POST", "/v1/user/123", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -54,7 +67,13 @@ func TestNamespacePost(t *testing.T) {
 }
 
 func TestNamespaceNest(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/admin/order", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/admin/order", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -72,7 +91,13 @@ func TestNamespaceNest(t *testing.T) {
 }
 
 func TestNamespaceNestParam(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/admin/order/123", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/admin/order/123", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -90,7 +115,13 @@ func TestNamespaceNestParam(t *testing.T) {
 }
 
 func TestNamespaceRouter(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/api/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/api/list", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -103,7 +134,13 @@ func TestNamespaceRouter(t *testing.T) {
 }
 
 func TestNamespaceAutoFunc(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/test/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/test/list", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -116,7 +153,13 @@ func TestNamespaceAutoFunc(t *testing.T) {
 }
 
 func TestNamespaceFilter(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/user/123", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v1/user/123", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v1")
@@ -134,7 +177,13 @@ func TestNamespaceFilter(t *testing.T) {
 }
 
 func TestNamespaceCond(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v2/test/list", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v2/test/list", nil)
 	w := httptest.NewRecorder()
 
 	ns := NewNamespace("/v2")
@@ -153,7 +202,13 @@ func TestNamespaceCond(t *testing.T) {
 }
 
 func TestNamespaceInside(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v3/shop/order/123", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/v3/shop/order/123", nil)
 	w := httptest.NewRecorder()
 	ns := NewNamespace("/v3",
 		NSAutoRouter(&TestController{}),

@@ -15,11 +15,12 @@
 package beegae
 
 import (
-	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/astaxie/beegae/context"
+
+	"appengine/aetest"
 )
 
 var FilterUser = func(ctx *context.Context) {
@@ -27,7 +28,13 @@ var FilterUser = func(ctx *context.Context) {
 }
 
 func TestFilter(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/person/asta/Xie", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/person/asta/Xie", nil)
 	w := httptest.NewRecorder()
 	handler := NewControllerRegister()
 	handler.InsertFilter("/person/:last/:first", BeforeRouter, FilterUser)
@@ -46,7 +53,13 @@ var FilterAdminUser = func(ctx *context.Context) {
 // all url like    /admin/    /admin/xie    will all get filter
 
 func TestPatternTwo(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/admin/", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/admin/", nil)
 	w := httptest.NewRecorder()
 	handler := NewControllerRegister()
 	handler.InsertFilter("/admin/?:all", BeforeRouter, FilterAdminUser)
@@ -57,7 +70,13 @@ func TestPatternTwo(t *testing.T) {
 }
 
 func TestPatternThree(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/admin/astaxie", nil)
+	inst, err := aetest.NewInstance(nil)
+	if err != nil {
+		t.Fatalf("Failed to create instance: %v", err)
+	}
+	defer inst.Close()
+
+	r, _ := inst.NewRequest("GET", "/admin/astaxie", nil)
 	w := httptest.NewRecorder()
 	handler := NewControllerRegister()
 	handler.InsertFilter("/admin/:all", BeforeRouter, FilterAdminUser)
