@@ -10,10 +10,26 @@ More info [beego.me](http://beego.me)
 
 The aim of this project is to keep as much of beego unchanged as possible in beegae.
 
+## IMPORTANT UPDATE - Breaking Changes with beegae 1.5
+
+With the latest update beegae now uses the [google.golang.org/appengine](https://godoc.org/google.golang.org/appengine) AppEngine package. You can read the differences from the classic `appengine` package on the new package's [repository](https://github.com/golang/appengine).
+beegae users will need to update their apps to use this package as per the instructions on the repository. The `controller.AppEngineCtx` type was changed to `context.Context` so minimal changes to users' code should be necessary.
+
+The session code was also updated to reflect these changes, most notably, the `context.Context` is now the first argument for the session interface functions. Additionally, the package was moved to be more in-line with how `beego` broke out its session implementations.
+
+Like other session providers as part of `beego`, you need to do an blank import of the `appengine` session provider: `import _ "github.com/astaxie/beegae/session/appengine"`
+This will register the `appengine` session provider so you may use it in your application. You may do this in your `main.go` file. Look at the [examples](https://github.com/astaxie/beegae/tree/master/example) for guidance.
+
+My apologies for any inconvenience this brings to your code. The new package is the recommended approach to Go on AppEngine as it works on both classic AppEngine and Managed VMs, and so beegae was updated to support this recommendation.
+
+Please note: As of writing this package has NOT been tested on Managed VMs.
+
+As always, if there any bugs with the package please open an issue and/or submit a PR.
+
 ## Features
 
-* Datastore + Memcached backed session store! [read more here](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) to learn how to use it.
-* `AppEngineCtx` is part of the default Controller. View the included sessions package [documentation](https://github.com/astaxie/beegae/tree/develop/session#beegae-session) for an example of using it!
+* Datastore + Memcached backed session store! [read more here](https://github.com/astaxie/beegae/tree/master/session#beegae-session) to learn how to use it.
+* `AppEngineCtx` is part of the default Controller. View the included sessions package [documentation](https://github.com/astaxie/beegae/tree/master/session#beegae-session) for an example of using it!
 
 ## beego Documentation
 
