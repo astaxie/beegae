@@ -20,11 +20,11 @@ package models
 import (
 	"time"
 
-	"appengine"
-	"appengine/datastore"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine/datastore"
 )
 
-func DefaultTodoList(c appengine.Context) *datastore.Key {
+func DefaultTodoList(c context.Context) *datastore.Key {
 	return datastore.NewKey(c, "TodoList", "default", 0, nil)
 }
 
@@ -35,7 +35,7 @@ type Todo struct {
 	Created time.Time `json:"created"`
 }
 
-func (t *Todo) key(c appengine.Context) *datastore.Key {
+func (t *Todo) key(c context.Context) *datastore.Key {
 	if t.Id == 0 {
 		t.Created = time.Now()
 		return datastore.NewIncompleteKey(c, "Todo", DefaultTodoList(c))
@@ -43,7 +43,7 @@ func (t *Todo) key(c appengine.Context) *datastore.Key {
 	return datastore.NewKey(c, "Todo", "", t.Id, DefaultTodoList(c))
 }
 
-func (t *Todo) Save(c appengine.Context) (*Todo, error) {
+func (t *Todo) Save(c context.Context) (*Todo, error) {
 	k, err := datastore.Put(c, t.key(c), t)
 	if err != nil {
 		return nil, err

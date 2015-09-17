@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"appengine/aetest"
+	"google.golang.org/appengine/aetest"
 )
 
 type TestFlashController struct {

@@ -87,7 +87,7 @@ func (l *logFilter) Filter(ctx *beecontext.Context) bool {
 	if requestPath == "/favicon.ico" || requestPath == "/robots.txt" {
 		return true
 	}
-	for prefix, _ := range StaticDir {
+	for prefix := range StaticDir {
 		if strings.HasPrefix(requestPath, prefix) {
 			return true
 		}
@@ -170,7 +170,7 @@ func (p *ControllerRegistor) Add(pattern string, c ControllerInterface, mappingM
 			p.addToRouter(m, pattern, route)
 		}
 	} else {
-		for k, _ := range methods {
+		for k := range methods {
 			if k == "*" {
 				for _, m := range HTTPMETHOD {
 					p.addToRouter(m, pattern, route)
@@ -331,7 +331,7 @@ func (p *ControllerRegistor) AddMethod(method, pattern string, f FilterFunc) {
 		methods[strings.ToUpper(method)] = strings.ToUpper(method)
 	}
 	route.methods = methods
-	for k, _ := range methods {
+	for k := range methods {
 		if k == "*" {
 			for _, m := range HTTPMETHOD {
 				p.addToRouter(m, pattern, route)
@@ -610,17 +610,24 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 		if p.enableFilter {
 			if l, ok := p.filters[pos]; ok {
 				for _, filterR := range l {
-					if ok, p := filterR.ValidRouter(urlPath); ok {
-						context.Input.Params = p
-						filterR.filterFunc(context)
-						if filterR.returnOnOutput && w.started {
-							return true
+					if filterR.returnOnOutput && w.started {
+						return true
+					}
+					if ok, params := filterR.ValidRouter(urlPath); ok {
+						for k, v := range params {
+							if context.Input.Params == nil {
+								context.Input.Params = make(map[string]string)	
+							}
+							context.Input.Params[k] = v
 						}
+						filterR.filterFunc(context)
+					}
+					if filterR.returnOnOutput && w.started {
+						return true
 					}
 				}
 			}
 		}
-
 		return false
 	}
 
@@ -683,7 +690,9 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 						p[strconv.Itoa(k)] = v
 					}
 				}
-				context.Input.Params = p
+				if p != nil {
+					context.Input.Params = p
+				}
 			}
 		}
 
@@ -845,55 +854,28 @@ func (p *ControllerRegistor) recoverPanic(context *beecontext.Context) {
 		if err == USERSTOPRUN {
 			return
 		}
-		if RunMode == "dev" {
-			if !RecoverPanic {
-				panic(err)
-			} else {
-				if ErrorsShow {
-					if handler, ok := ErrorMaps[fmt.Sprint(err)]; ok {
-						executeError(handler, context)
-						return
-					}
-				}
-				var stack string
-				Critical("the request url is ", context.Input.Url())
-				Critical("Handler crashed with error", err)
-				for i := 1; ; i++ {
-					_, file, line, ok := runtime.Caller(i)
-					if !ok {
-						break
-					}
-					Critical(fmt.Sprintf("%s:%d", file, line))
-					stack = stack + fmt.Sprintln(fmt.Sprintf("%s:%d", file, line))
-				}
-				showErr(err, context, stack)
-			}
+		if !RecoverPanic {
+			panic(err)
 		} else {
-			if !RecoverPanic {
-				panic(err)
-			} else {
-				// in production model show all infomation
-				if ErrorsShow {
-					if handler, ok := ErrorMaps[fmt.Sprint(err)]; ok {
-						executeError(handler, context)
-						return
-					} else if handler, ok := ErrorMaps["503"]; ok {
-						executeError(handler, context)
-						return
-					} else {
-						context.WriteString(fmt.Sprint(err))
-					}
-				} else {
-					Critical("the request url is ", context.Input.Url())
-					Critical("Handler crashed with error", err)
-					for i := 1; ; i++ {
-						_, file, line, ok := runtime.Caller(i)
-						if !ok {
-							break
-						}
-						Critical(fmt.Sprintf("%s:%d", file, line))
-					}
+			if ErrorsShow {
+				if _, ok := ErrorMaps[fmt.Sprint(err)]; ok {
+					exception(fmt.Sprint(err), context)
+					return
 				}
+			}
+			var stack string
+			Critical("the request url is ", context.Input.Url())
+			Critical("Handler crashed with error", err)
+			for i := 1; ; i++ {
+				_, file, line, ok := runtime.Caller(i)
+				if !ok {
+					break
+				}
+				Critical(fmt.Sprintf("%s:%d", file, line))
+				stack = stack + fmt.Sprintln(fmt.Sprintf("%s:%d", file, line))
+			}
+			if RunMode == "dev" {
+				showErr(err, context, stack)
 			}
 		}
 	}

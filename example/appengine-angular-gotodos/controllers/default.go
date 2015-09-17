@@ -48,8 +48,9 @@ import (
 
 	"models"
 
-	"appengine"
-	"appengine/datastore"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
 
 	"github.com/astaxie/beegae"
 )
@@ -86,7 +87,7 @@ func (this *MainController) Post() {
 }
 
 func (this *MainController) Delete() {
-	err := datastore.RunInTransaction(this.AppEngineCtx, func(c appengine.Context) error {
+	err := datastore.RunInTransaction(this.AppEngineCtx, func(c context.Context) error {
 		ks, err := datastore.NewQuery("Todo").KeysOnly().Ancestor(models.DefaultTodoList(c)).Filter("Done=", true).GetAll(c, nil)
 		if err != nil {
 			return err
@@ -103,7 +104,7 @@ func (this *MainController) Delete() {
 
 func (this *MainController) Render() error {
 	if _, ok := this.Data["json"].(error); ok {
-		this.AppEngineCtx.Errorf("todo error: %v", this.Data["json"])
+		log.Errorf(this.AppEngineCtx, "todo error: %v", this.Data["json"])
 	}
 	this.ServeJson()
 	return nil

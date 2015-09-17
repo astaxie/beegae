@@ -22,7 +22,7 @@ import (
 
 	"github.com/astaxie/beegae/context"
 
-	"appengine/aetest"
+	"google.golang.org/appengine/aetest"
 )
 
 type TestController struct {
@@ -536,7 +536,7 @@ func TestFilterAfterExec(t *testing.T) {
 	mux := NewControllerRegister()
 	mux.InsertFilter(url, BeforeRouter, beegoFilterNoOutput)
 	mux.InsertFilter(url, BeforeExec, beegoFilterNoOutput)
-	mux.InsertFilter(url, AfterExec, beegoAfterExec1)
+	mux.InsertFilter(url, AfterExec, beegoAfterExec1, false)
 
 	mux.Get(url, beegoFilterFunc)
 
@@ -598,7 +598,7 @@ func TestFilterFinishRouterMultiFirstOnly(t *testing.T) {
 	url := "/finishRouterMultiFirstOnly"
 
 	mux := NewControllerRegister()
-	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1)
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1, false)
 	mux.InsertFilter(url, FinishRouter, beegoFinishRouter2)
 
 	mux.Get(url, beegoFilterFunc)
@@ -626,7 +626,7 @@ func TestFilterFinishRouterMulti(t *testing.T) {
 
 	mux := NewControllerRegister()
 	mux.InsertFilter(url, FinishRouter, beegoFinishRouter1, false)
-	mux.InsertFilter(url, FinishRouter, beegoFinishRouter2)
+	mux.InsertFilter(url, FinishRouter, beegoFinishRouter2, false)
 
 	mux.Get(url, beegoFilterFunc)
 

@@ -36,7 +36,8 @@ import (
 	"net/url"
 	"time"
 
-	"appengine"
+	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 )
 
 // SessionStore contains all data for one session process with specific id.
@@ -53,12 +54,12 @@ type SessionStore interface {
 // it can operate a SessionStore by its id.
 type Provider interface {
 	SessionInit(gclifetime int64, config string) error
-	SessionRead(sid string, c appengine.Context) (SessionStore, error)
-	SessionExist(sid string, c appengine.Context) bool
-	SessionRegenerate(oldsid, sid string, c appengine.Context) (SessionStore, error)
-	SessionDestroy(sid string, c appengine.Context) error
+	SessionRead(c context.Context, sid string) (SessionStore, error)
+	SessionExist(c context.Context, sid string) bool
+	SessionRegenerate(c context.Context, oldsid, sid string) (SessionStore, error)
+	SessionDestroy(c context.Context, sid string) error
 	SessionAll() int //get all active session
-	SessionGC(c appengine.Context)
+	SessionGC(c context.Context)
 }
 
 var provides = make(map[string]Provider)
@@ -145,15 +146,19 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 		if errs != nil {
 			return nil, errs
 		}
-		session, err = manager.provider.SessionRead(sid, c)
-		cookie = &http.Cookie{Name: manager.config.CookieName,
+
+		session, err = manager.provider.SessionRead(c, sid)
+		cookie = &http.Cookie{
+			Name:     manager.config.CookieName,
 			Value:    url.QueryEscape(sid),
 			Path:     "/",
 			HttpOnly: true,
-			Secure:   manager.config.Secure,
-			Domain:   manager.config.Domain}
-		if manager.config.CookieLifeTime >= 0 {
+			Secure:   manager.isSecure(r),
+			Domain:   manager.config.Domain,
+		}
+		if manager.config.CookieLifeTime > 0 {
 			cookie.MaxAge = manager.config.CookieLifeTime
+			cookie.Expires = time.Now().Add(time.Duration(manager.config.CookieLifeTime) * time.Second)
 		}
 		if manager.config.EnableSetCookie {
 			http.SetCookie(w, cookie)
@@ -164,22 +169,25 @@ func (manager *Manager) SessionStart(w http.ResponseWriter, r *http.Request) (se
 		if errs != nil {
 			return nil, errs
 		}
-		if manager.provider.SessionExist(sid, c) {
-			session, err = manager.provider.SessionRead(sid, c)
+		if manager.provider.SessionExist(c, sid) {
+			session, err = manager.provider.SessionRead(c, sid)
 		} else {
 			sid, err = manager.sessionId(r)
 			if err != nil {
 				return nil, err
 			}
-			session, err = manager.provider.SessionRead(sid, c)
-			cookie = &http.Cookie{Name: manager.config.CookieName,
+			session, err = manager.provider.SessionRead(c, sid)
+			cookie = &http.Cookie{
+				Name:     manager.config.CookieName,
 				Value:    url.QueryEscape(sid),
 				Path:     "/",
 				HttpOnly: true,
-				Secure:   manager.config.Secure,
-				Domain:   manager.config.Domain}
-			if manager.config.CookieLifeTime >= 0 {
+				Secure:   manager.isSecure(r),
+				Domain:   manager.config.Domain,
+			}
+			if manager.config.CookieLifeTime > 0 {
 				cookie.MaxAge = manager.config.CookieLifeTime
+				cookie.Expires = time.Now().Add(time.Duration(manager.config.CookieLifeTime) * time.Second)
 			}
 			if manager.config.EnableSetCookie {
 				http.SetCookie(w, cookie)
@@ -197,7 +205,7 @@ func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
 	if err != nil || cookie.Value == "" {
 		return
 	} else {
-		manager.provider.SessionDestroy(cookie.Value, c)
+		manager.provider.SessionDestroy(c, cookie.Value)
 		expiration := time.Now()
 		cookie := http.Cookie{Name: manager.config.CookieName,
 			Path:     "/",
@@ -209,14 +217,14 @@ func (manager *Manager) SessionDestroy(w http.ResponseWriter, r *http.Request) {
 }
 
 // Get SessionStore by its id.
-func (manager *Manager) GetSessionStore(sid string, c appengine.Context) (sessions SessionStore, err error) {
-	sessions, err = manager.provider.SessionRead(sid, c)
+func (manager *Manager) GetSessionStore(c context.Context, sid string) (sessions SessionStore, err error) {
+	sessions, err = manager.provider.SessionRead(c, sid)
 	return
 }
 
 // Start session gc process.
 // it can do gc in times after gc lifetime.
-func (manager *Manager) GC(c appengine.Context) {
+func (manager *Manager) GC(c context.Context) {
 	manager.provider.SessionGC(c)
 	// No such thing as a never ending goroutine...
 	// Create a cronjob + custom handler instead
@@ -236,23 +244,24 @@ func (manager *Manager) SessionRegenerateId(w http.ResponseWriter, r *http.Reque
 	cookie, err := r.Cookie(manager.config.CookieName)
 	if err != nil && cookie.Value == "" {
 		//delete old cookie
-		session, _ = manager.provider.SessionRead(sid, c)
+		session, _ = manager.provider.SessionRead(c, sid)
 		cookie = &http.Cookie{Name: manager.config.CookieName,
 			Value:    url.QueryEscape(sid),
 			Path:     "/",
 			HttpOnly: true,
-			Secure:   manager.config.Secure,
+			Secure:   manager.isSecure(r),
 			Domain:   manager.config.Domain,
 		}
 	} else {
 		oldsid, _ := url.QueryUnescape(cookie.Value)
-		session, _ = manager.provider.SessionRegenerate(oldsid, sid, c)
+		session, _ = manager.provider.SessionRegenerate(c, oldsid, sid)
 		cookie.Value = url.QueryEscape(sid)
 		cookie.HttpOnly = true
 		cookie.Path = "/"
 	}
-	if manager.config.CookieLifeTime >= 0 {
+	if manager.config.CookieLifeTime > 0 {
 		cookie.MaxAge = manager.config.CookieLifeTime
+		cookie.Expires = time.Now().Add(time.Duration(manager.config.CookieLifeTime) * time.Second)
 	}
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)
@@ -276,4 +285,18 @@ func (manager *Manager) sessionId(r *http.Request) (string, error) {
 		return "", fmt.Errorf("Could not successfully read from the system CSPRNG.")
 	}
 	return hex.EncodeToString(b), nil
+}
+
+// Set cookie with https.
+func (manager *Manager) isSecure(req *http.Request) bool {
+	if !manager.config.Secure {
+		return false
+	}
+	if req.URL.Scheme != "" {
+		return req.URL.Scheme == "https"
+	}
+	if req.TLS == nil {
+		return false
+	}
+	return true
 }

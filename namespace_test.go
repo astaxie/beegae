@@ -21,7 +21,7 @@ import (
 
 	"github.com/astaxie/beegae/context"
 
-	"appengine/aetest"
+	"google.golang.org/appengine/aetest"
 )
 
 func TestNamespaceGet(t *testing.T) {

@@ -20,7 +20,7 @@ import (
 
 	"github.com/astaxie/beegae/context"
 
-	"appengine/aetest"
+	"google.golang.org/appengine/aetest"
 )
 
 var FilterUser = func(ctx *context.Context) {

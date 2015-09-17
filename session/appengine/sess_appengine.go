@@ -1,5 +1,3 @@
-// +build appengine
-
 package session
 
 import (
@@ -7,15 +5,19 @@ import (
 	"sync"
 	"time"
 
-	"appengine"
-	"appengine/datastore"
-	"appengine/memcache"
+	"golang.org/x/net/context"
+
+	"google.golang.org/appengine/datastore"
+	"google.golang.org/appengine/log"
+	"google.golang.org/appengine/memcache"
+
+	"github.com/astaxie/beegae/session"
 )
 
 var appenginepvdr = &AppEngineProvider{}
 
 type AppEngineSessionStore struct {
-	c           appengine.Context
+	c           context.Context
 	sid         string
 	lock        sync.RWMutex
 	dirty       bool
@@ -71,9 +73,9 @@ func (st *AppEngineSessionStore) SessionID() string {
 }
 
 func (st *AppEngineSessionStore) updatestore() {
-	b, err := EncodeGob(st.values)
+	b, err := session.EncodeGob(st.values)
 	if err != nil {
-		st.c.Errorf("error encoding session data: %v", err)
+		log.Errorf(st.c, "session-appengine: error encoding session data: %v", err)
 		return
 	}
 
@@ -88,7 +90,7 @@ func (st *AppEngineSessionStore) updatestore() {
 	go func() {
 		k := datastore.NewKey(st.c, "BeegoSessionStore", st.sid, 0, nil)
 		if _, ds_err := datastore.Put(st.c, k, st.bss_entity); ds_err != nil {
-			st.c.Errorf("error saving session data to datastore: %v", ds_err)
+			log.Errorf(st.c, "session-appengine: error saving session data to datastore: %v", ds_err)
 		}
 		done <- true
 	}()
@@ -100,7 +102,7 @@ func (st *AppEngineSessionStore) updatestore() {
 			Expiration: (time.Duration(st.maxlifetime) * time.Second),
 		})
 		if mem_err != nil {
-			st.c.Errorf("error saving session data to memcache: %v", mem_err)
+			log.Errorf(st.c, "session-appengine: error saving session data to memcache: %v", mem_err)
 		}
 		done <- true
 	}()
@@ -125,7 +127,7 @@ func (mp *AppEngineProvider) SessionInit(gclifetime int64, config string) error 
 	return nil
 }
 
-func (mp *AppEngineProvider) getsession(sid string, c appengine.Context) *BeegoSessionStore {
+func (mp *AppEngineProvider) getsession(c context.Context, sid string) *BeegoSessionStore {
 	in_cache := false
 	e := new(BeegoSessionStore)
 	if item, err := memcache.Get(c, sid); err == nil {
@@ -133,7 +135,7 @@ func (mp *AppEngineProvider) getsession(sid string, c appengine.Context) *BeegoS
 		e.SessionData = item.Value
 		e.SessionStart = time.Now() // Do we care about accuracy here?
 	} else if err != memcache.ErrCacheMiss {
-		c.Errorf("error getting session data from memcache: %v", err)
+		log.Errorf(c, "session-appengine: error getting session data from memcache: %v", err)
 	}
 
 	if !in_cache {
@@ -141,20 +143,20 @@ func (mp *AppEngineProvider) getsession(sid string, c appengine.Context) *BeegoS
 		if ds_err := datastore.Get(c, k, e); ds_err != nil {
 			e.SessionStart = time.Now()
 			if ds_err != datastore.ErrNoSuchEntity {
-				c.Errorf("error getting session data from datastore: %v", ds_err)
+				log.Errorf(c, "session-appengine: error getting session data from datastore: %v", ds_err)
 			}
 		}
 	}
 	return e
 }
 
-func (mp *AppEngineProvider) SessionExist(sid string, c appengine.Context) bool {
+func (mp *AppEngineProvider) SessionExist(c context.Context, sid string) bool {
 	k := datastore.NewKey(c, "BeegoSessionStore", sid, 0, nil)
 	e := new(BeegoSessionStore)
 	if ds_err := datastore.Get(c, k, e); ds_err == datastore.ErrNoSuchEntity {
 		return false
 	} else if ds_err != nil {
-		c.Errorf("error while checking existence of session data from datastore: %v", ds_err)
+		log.Errorf(c, "session-appengine: error while checking existence of session data from datastore: %v", ds_err)
 		return false
 	} else {
 		// Don't depend on GC to clean expired sessions
@@ -162,12 +164,12 @@ func (mp *AppEngineProvider) SessionExist(sid string, c appengine.Context) bool 
 	}
 }
 
-func (mp *AppEngineProvider) SessionRead(sid string, c appengine.Context) (SessionStore, error) {
-	e := mp.getsession(sid, c)
+func (mp *AppEngineProvider) SessionRead(c context.Context, sid string) (session.SessionStore, error) {
+	e := mp.getsession(c, sid)
 	var kv = make(map[interface{}]interface{})
 
 	if len(e.SessionData) != 0 {
-		decoded_gob, err := DecodeGob(e.SessionData)
+		decoded_gob, err := session.DecodeGob(e.SessionData)
 		if err != nil {
 			return nil, err
 		}
@@ -177,12 +179,12 @@ func (mp *AppEngineProvider) SessionRead(sid string, c appengine.Context) (Sessi
 	return rs, nil
 }
 
-func (mp *AppEngineProvider) SessionRegenerate(oldsid, sid string, c appengine.Context) (SessionStore, error) {
-	e := mp.getsession(sid, c)
+func (mp *AppEngineProvider) SessionRegenerate(c context.Context, oldsid, sid string) (session.SessionStore, error) {
+	e := mp.getsession(c, sid)
 	var kv = make(map[interface{}]interface{})
 
 	if len(e.SessionData) != 0 {
-		decoded_gob, err := DecodeGob(e.SessionData)
+		decoded_gob, err := session.DecodeGob(e.SessionData)
 		if err != nil {
 			return nil, err
 		}
@@ -192,13 +194,13 @@ func (mp *AppEngineProvider) SessionRegenerate(oldsid, sid string, c appengine.C
 	return rs, nil
 }
 
-func (mp *AppEngineProvider) SessionDestroy(sid string, c appengine.Context) error {
+func (mp *AppEngineProvider) SessionDestroy(c context.Context, sid string) error {
 	done := make(chan bool, 2)
 
 	go func() {
 		k := datastore.NewKey(c, "BeegoSessionStore", sid, 0, nil)
 		if ds_err := datastore.Delete(c, k); ds_err != nil {
-			c.Errorf("error deleting session data from datastore: %v", ds_err)
+			log.Errorf(c, "session-appengine: error deleting session data from datastore: %v", ds_err)
 		}
 		done <- true
 	}()
@@ -206,7 +208,7 @@ func (mp *AppEngineProvider) SessionDestroy(sid string, c appengine.Context) err
 	go func() {
 		mem_err := memcache.Delete(c, sid)
 		if mem_err != nil {
-			c.Errorf("error deleting session data from memcache: %v", mem_err)
+			log.Errorf(c, "session-appengine: error deleting session data from memcache: %v", mem_err)
 		}
 		done <- true
 	}()
@@ -215,16 +217,16 @@ func (mp *AppEngineProvider) SessionDestroy(sid string, c appengine.Context) err
 	return nil
 }
 
-func (mp *AppEngineProvider) SessionGC(c appengine.Context) {
+func (mp *AppEngineProvider) SessionGC(c context.Context) {
 	q := datastore.NewQuery("BeegoSessionStore").Filter("SessionStart <", time.Now().Unix()-mp.maxlifetime).KeysOnly()
 
 	keys, err := q.GetAll(c, nil)
 	if err != nil {
-		c.Errorf("error querying session data from datastore: %v", err)
+		log.Errorf(c, "session-appengine: error querying session data from datastore: %v", err)
 	}
 
 	for _, key := range keys {
-		mp.SessionDestroy(key.StringID(), c)
+		mp.SessionDestroy(c, key.StringID())
 	}
 	return
 }
@@ -242,5 +244,5 @@ func (mp *AppEngineProvider) SessionAll() int {
 }
 
 func init() {
-	Register("appengine", appenginepvdr)
+	session.Register("appengine", appenginepvdr)
 }
