@@ -30,7 +30,6 @@ import (
 	"time"
 
 	beecontext "github.com/astaxie/beegae/context"
-	"github.com/astaxie/beego/toolbox"
 	"github.com/astaxie/beego/utils"
 )
 
@@ -616,7 +615,7 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 					if ok, params := filterR.ValidRouter(urlPath); ok {
 						for k, v := range params {
 							if context.Input.Params == nil {
-								context.Input.Params = make(map[string]string)	
+								context.Input.Params = make(map[string]string)
 							}
 							context.Input.Params[k] = v
 						}
@@ -816,16 +815,6 @@ func (p *ControllerRegistor) ServeHTTP(rw http.ResponseWriter, r *http.Request) 
 
 Admin:
 	timeend := time.Since(starttime)
-	//admin module record QPS
-	if EnableAdmin {
-		if FilterMonitorFunc(r.Method, r.URL.Path, timeend) {
-			if runrouter != nil {
-				go toolbox.StatisticsMap.AddStatistics(r.Method, r.URL.Path, runrouter.Name(), timeend)
-			} else {
-				go toolbox.StatisticsMap.AddStatistics(r.Method, r.URL.Path, "", timeend)
-			}
-		}
-	}
 
 	if RunMode == "dev" || AccessLogs {
 		var devinfo string

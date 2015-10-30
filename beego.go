@@ -270,10 +270,6 @@ func Run(params ...string) {
 	}
 	initBeforeHttpRun()
 
-	if EnableAdmin {
-		go beeAdminApp.Run()
-	}
-
 	BeeApp.Run()
 }
 
