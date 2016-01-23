@@ -84,7 +84,7 @@ var (
 )
 
 type beegoAppConfig struct {
-	innerConfig config.ConfigContainer
+	innerConfig config.Configer
 }
 
 func newAppConfig(AppConfigProvider, AppConfigPath string) (*beegoAppConfig, error) {
