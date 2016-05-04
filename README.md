@@ -54,8 +54,8 @@ As always, if there any bugs with the package please open an issue and/or submit
 
 This will be a quick overview of how to setup the repository and get started with beegae on AppEngine. It is already assumed that you have setup the AppEngine SDK for Go correctly and setup your GOPATH correctly
 
-* `# goapp get github.com/astaxie/beegae`
-* `# goapp get github.com/beego/bee`
+* `# go get github.com/astaxie/beegae`
+* `# go get github.com/beego/bee`
 * `# cd $GOPATH/src`
 * `# $GOPATH/bin/bee new hellogae`
 * `# cd hellogae`
@@ -65,7 +65,21 @@ This will be a quick overview of how to setup the repository and get started wit
 application: hellobeegae
 version: 1
 runtime: go
+threadsafe: true
 api_version: go1
+
+handlers:
+- url: /.*
+  script: _go_app
+```
+
+or if you are using the flexible runtime:
+
+```yaml
+runtime: go
+vm: true
+threadsafe: true
+api_version: 1
 
 handlers:
 - url: /.*
