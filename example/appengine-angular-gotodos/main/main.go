@@ -18,7 +18,8 @@
 package main
 
 import (
-	"controllers"
+	"github.com/astaxie/beegae/example/appengine-angular-gotodos/controllers"
+
 	"github.com/astaxie/beegae"
 	_ "github.com/astaxie/beegae/session/appengine"
 )

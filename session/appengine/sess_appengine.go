@@ -164,7 +164,7 @@ func (mp *AppEngineProvider) SessionExist(c context.Context, sid string) bool {
 	}
 }
 
-func (mp *AppEngineProvider) SessionRead(c context.Context, sid string) (session.SessionStore, error) {
+func (mp *AppEngineProvider) SessionRead(c context.Context, sid string) (session.Store, error) {
 	e := mp.getsession(c, sid)
 	var kv = make(map[interface{}]interface{})
 
@@ -179,7 +179,7 @@ func (mp *AppEngineProvider) SessionRead(c context.Context, sid string) (session
 	return rs, nil
 }
 
-func (mp *AppEngineProvider) SessionRegenerate(c context.Context, oldsid, sid string) (session.SessionStore, error) {
+func (mp *AppEngineProvider) SessionRegenerate(c context.Context, oldsid, sid string) (session.Store, error) {
 	e := mp.getsession(c, sid)
 	var kv = make(map[interface{}]interface{})
 

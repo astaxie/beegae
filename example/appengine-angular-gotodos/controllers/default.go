@@ -46,7 +46,7 @@ import (
 	"encoding/json"
 	"io"
 
-	"models"
+	"github.com/astaxie/beegae/example/appengine-angular-gotodos/models"
 
 	"golang.org/x/net/context"
 	"google.golang.org/appengine/datastore"
@@ -73,7 +73,7 @@ func (this *MainController) Get() {
 }
 
 func (this *MainController) Post() {
-	todo, err := decodeTodo(this.Ctx.Input.Request.Body)
+	todo, err := decodeTodo(this.Ctx.Request.Body)
 	if err != nil {
 		this.Data["json"] = err
 		return
@@ -106,7 +106,7 @@ func (this *MainController) Render() error {
 	if _, ok := this.Data["json"].(error); ok {
 		log.Errorf(this.AppEngineCtx, "todo error: %v", this.Data["json"])
 	}
-	this.ServeJson()
+	this.ServeJSON()
 	return nil
 }
 

@@ -1,14 +1,24 @@
 ## beegae
 
 [beego](http://github.com/astaxie/beego) is a Go Framework inspired by tornado and sinatra.
+[![beego Build Status](https://travis-ci.org/astaxie/beego.svg?branch=master)](https://travis-ci.org/astaxie/beego)
+[![beego GoDoc](http://godoc.org/github.com/astaxie/beego?status.svg)](http://godoc.org/github.com/astaxie/beego)
 
-beego is an open-source, high-performance, modular, full-stack web framework.
+
+beego is used for rapid development of RESTful APIs, web apps and backend services in Go.
+It is inspired by Tornado, Sinatra and Flask. beego has some Go-specific features such as interfaces and struct embedding.
 
 More info [beego.me](http://beego.me)
 
-**beegae** is a port of beego intended to be used on Google's AppEngine. There are a few subtle differences between how beego and beegae initalizes applications which you can see for yourself here [example](https://github.com/astaxie/beegae/tree/master/example)
+**beegae** is a port of beego intended to be used on Google's AppEngine. There are a few subtle differences between how beego and beegae initializes applications which you can see for yourself here [example](https://github.com/astaxie/beegae/tree/master/example)
 
 The aim of this project is to keep as much of beego unchanged as possible in beegae.
+
+## IMPORTANT UPDATE - Breaking Changes with beegae 1.6.1
+There were changes made to the beego core that were updated in beegae for consistency between packages. Many of these changes are in relation to refactoring various objects in beego as well addressing
+golint recommendations to variable/function names. This may result in minor tweaks to your code (e.g. UrlFor is now URLFor on controllers).
+
+This package now supports both classic AppEngine runtime as well as flexible (formerly Managed VM) runtime.
 
 ## IMPORTANT UPDATE - Breaking Changes with beegae 1.5
 
@@ -22,8 +32,6 @@ This will register the `appengine` session provider so you may use it in your ap
 
 My apologies for any inconvenience this brings to your code. The new package is the recommended approach to Go on AppEngine as it works on both classic AppEngine and Managed VMs, and so beegae was updated to support this recommendation.
 
-Please note: As of writing this package has NOT been tested on Managed VMs.
-
 As always, if there any bugs with the package please open an issue and/or submit a PR.
 
 ## Features
@@ -35,10 +43,12 @@ As always, if there any bugs with the package please open an issue and/or submit
 
 * [English](http://beego.me/docs/intro/)
 * [中文文档](http://beego.me/docs/intro/)
+* [Русский](http://beego.me/docs/intro/)
 
 ## Community
 
 * [http://beego.me/community](http://beego.me/community)
+* Welcome to join us in Slack: [https://beego.slack.com](https://beego.slack.com), you can get invited from [here](https://github.com/beego/beedoc/issues/232)
 
 ## Getting Started
 
@@ -64,11 +74,11 @@ handlers:
 * `# gofmt -r '"github.com/astaxie/beego" -> "github.com/astaxie/beegae"' -w ./`
 * `# gofmt -r 'beego -> beegae' -w ./`
 * `# mkdir main && mv main.go main/ && mv app.yaml main/ && mv conf/ main/ && mv views/ main/ && cd main/`
-* Now open `main.go` and change `func main()` to `func init()`
+* If you are using the classic AppeEngine runtime, open `main.go` and change `func main()` to `func init()`, otherwise skip this step.
 * `# goapp serve`
 * Done!
 
 ## LICENSE
 
-beego is licensed under the Apache Licence, Version 2.0
+beego source code is licensed under the Apache Licence, Version 2.0
 (http://www.apache.org/licenses/LICENSE-2.0.html).
